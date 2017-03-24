@@ -62,61 +62,114 @@ dtheta_mu_default <- function(model, market, theta, dtheta=diag(length(theta)))
   return(list(mu= c(mu),mux0s=mux0s, mu0ys=mu0ys,dmu=dmu))
 }
 
-dtheta_mu_logit <- function(model, market, theta, dtheta=diag(length(theta)))
+
+dtheta_mu_mfe <- function(model, market, theta, dtheta=diag(length(theta)))
 {
+  nbX = length(market$n)
+  nbY = length(market$m)
+  # here, a check that the model is indeed of class MFE
   rangeParams = dim(dtheta)[2]
-  sigma = market$arumsG$sigma
   
-  dthetaPsiGH = dparam(model, dtheta)
-  dthetaPsi = dthetaPsiGH$dparamsPsi
-  
-  tr = market$transfers
-  #
+  dthetaM = dparam(model, dtheta)
+  mmfs = market$mmfs
   outcome = solveEquilibrium(market,notifications=FALSE,debugmode=FALSE)
-  #
   mu = outcome$mu
   mux0s = outcome$mux0
   mu0ys = outcome$mu0y
-  #
-  us = matrix(outcome$u,nrow=tr$nbX,ncol=tr$nbY)
-  vs = matrix(outcome$v,nrow=tr$nbX,ncol=tr$nbY,byrow=T)
   
-  du_psis = du_Psi(tr,us,vs)
-  dv_psis = 1 - du_psis
+  du_Ms = matrix(dmux0s_M(mmfs,mux0s,mu0ys),nrow=nbX)
+  dv_Ms = matrix(dmu0ys_M(mmfs,mux0s,mu0ys),nrow=nbX)
   #
-  dtheta_psis = matrix(dtheta_Psi(tr,us,vs,dthetaPsi),nrow=tr$nbX*tr$nbY)
-  mudthetapsi = array(c(mu)*c(dtheta_psis),dim=c(tr$nbX,tr$nbY,rangeParams))
+  dtheta_Ms = matrix(dtheta_M(mmfs,mux0s,mu0ys,dthetaM),nrow=tr$nbX*tr$nbY)
+
+  dtheta_Ms_array = array(dtheta_Ms ,dim=c(tr$nbX,tr$nbY,rangeParams))
   
-  d_1 = apply(mudthetapsi, c(1,3), sum) / sigma
-  d_2 = apply(mudthetapsi, c(2,3), sum) / sigma
-  num = rbind(d_1,d_2)
-  #
-  Delta11 = diag(mux0s + apply(mu*du_psis,1,sum),nrow=tr$nbX)
-  Delta22 = diag(mu0ys + apply(mu*dv_psis,2,sum),nrow=tr$nbY)
-  Delta12 = mu * dv_psis
-  Delta21 = t(mu * du_psis)
+  d_1 = apply(dtheta_Ms_array, c(1,3), sum) / sigma
+  d_2 = apply(dtheta_Ms_array, c(2,3), sum) / sigma
+  num =  - rbind(d_1,d_2)
+  
+  Delta11 = diag(1 + apply(du_Ms,1,sum),nrow=tr$nbX)
+  Delta22 = diag(1 + apply(dv_Ms,2,sum),nrow=tr$nbY)
+  Delta12 = dv_Ms
+  Delta21 = t(du_Ms)
   Delta = rbind(cbind(Delta11,Delta12),cbind(Delta21,Delta22))
-  #
-  dlogmusingles = solve(Delta,num)
-  dlogmux0 = dlogmusingles[1:tr$nbX,,drop=FALSE]
-  dlogmu0y = dlogmusingles[(tr$nbX+1):(tr$nbX+tr$nbY),,drop=FALSE]
-  dlogmux0full = array(0,dim=c(tr$nbX,tr$nbY,rangeParams))
-  dlogmu0yfull = array(0,dim=c(tr$nbX,tr$nbY,rangeParams))
-  #
-  for(y in 1:tr$nbY){
-    dlogmux0full[,y,] = dlogmux0
+  
+  dmusingles = solve(Delta,num)
+  dmux0 = dmusingles[1:nbX,,drop=FALSE]
+  dmu0y = dmusingles[(nbX+1):(nbX+nbY),,drop=FALSE]
+  dmux0full = array(0,dim=c(nbX,tr$nbY,rangeParams))
+  dmu0yfull = array(0,dim=c(nbX,tr$nbY,rangeParams))
+
+  for(y in 1:nbY){
+    dmux0full[,y,] = dmux0
   }
-  for(x in 1:tr$nbX){
-    dlogmu0yfull[x,,] = dlogmu0y
+  for(x in 1:nbX){
+    dmu0yfull[x,,] = dmu0y
   }
-  #
-  dlogmu = c(du_psis)*matrix(dlogmux0full, ncol=rangeParams) + 
-    c(dv_psis)*matrix(dlogmu0yfull, ncol=rangeParams) - 
-    matrix(dtheta_psis,ncol=rangeParams) / sigma    
-  dmu    = c(mu) * dlogmu
-  #
-  return(list(mu = c(mu), mux0s = mux0s, mu0ys = mu0ys, dmu = dmu))
+  
+  dmu = c(du_Ms)*matrix(dmux0full, ncol=rangeParams) + 
+    c(dv_Ms)*matrix(dmu0yfull, ncol=rangeParams) +
+    dtheta_Ms     
+
+    return(list(mu = c(mu), mux0s = mux0s, mu0ys = mu0ys, dmu = dmu))
+  
 }
+
+# dtheta_mu_logit <- function(model, market, theta, dtheta=diag(length(theta)))
+# {
+#   rangeParams = dim(dtheta)[2]
+#   sigma = market$arumsG$sigma
+#   
+#   dthetaPsiGH = dparam(model, dtheta)
+#   dthetaPsi = dthetaPsiGH$dparamsPsi
+#   
+#   tr = market$transfers
+#   #
+#   outcome = solveEquilibrium(market,notifications=FALSE,debugmode=FALSE)
+#   #
+#   mu = outcome$mu
+#   mux0s = outcome$mux0
+#   mu0ys = outcome$mu0y
+#   #
+#   us = matrix(outcome$u,nrow=tr$nbX,ncol=tr$nbY)
+#   vs = matrix(outcome$v,nrow=tr$nbX,ncol=tr$nbY,byrow=T)
+#   
+#   du_psis = du_Psi(tr,us,vs)
+#   dv_psis = 1 - du_psis
+#   #
+#   dtheta_psis = matrix(dtheta_Psi(tr,us,vs,dthetaPsi),nrow=tr$nbX*tr$nbY)
+#   mudthetapsi = array(c(mu)*c(dtheta_psis),dim=c(tr$nbX,tr$nbY,rangeParams))
+#   
+#   d_1 = apply(mudthetapsi, c(1,3), sum) / sigma
+#   d_2 = apply(mudthetapsi, c(2,3), sum) / sigma
+#   num = rbind(d_1,d_2)
+#   #
+#   Delta11 = diag(mux0s + apply(mu*du_psis,1,sum),nrow=tr$nbX)
+#   Delta22 = diag(mu0ys + apply(mu*dv_psis,2,sum),nrow=tr$nbY)
+#   Delta12 = mu * dv_psis
+#   Delta21 = t(mu * du_psis)
+#   Delta = rbind(cbind(Delta11,Delta12),cbind(Delta21,Delta22))
+#   #
+#   dlogmusingles = solve(Delta,num)
+#   dlogmux0 = dlogmusingles[1:tr$nbX,,drop=FALSE]
+#   dlogmu0y = dlogmusingles[(tr$nbX+1):(tr$nbX+tr$nbY),,drop=FALSE]
+#   dlogmux0full = array(0,dim=c(tr$nbX,tr$nbY,rangeParams))
+#   dlogmu0yfull = array(0,dim=c(tr$nbX,tr$nbY,rangeParams))
+#   #
+#   for(y in 1:tr$nbY){
+#     dlogmux0full[,y,] = dlogmux0
+#   }
+#   for(x in 1:tr$nbX){
+#     dlogmu0yfull[x,,] = dlogmu0y
+#   }
+#   #
+#   dlogmu = c(du_psis)*matrix(dlogmux0full, ncol=rangeParams) + 
+#     c(dv_psis)*matrix(dlogmu0yfull, ncol=rangeParams) - 
+#     matrix(dtheta_psis,ncol=rangeParams) / sigma    
+#   dmu    = c(mu) * dlogmu
+#   #
+#   return(list(mu = c(mu), mux0s = mux0s, mu0ys = mu0ys, dmu = dmu))
+# }
 
 dtheta_mu_numeric <- function (model, market, theta, dtheta=diag(length(theta)))
 { 

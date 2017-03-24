@@ -62,8 +62,8 @@ ipfp <- function(market, xFirst=T, notifications=TRUE, debugmode=FALSE, tol=1e-1
         val = c(ax,by)
         
         #Solve for ax and then by
-        ax = margxInv(1:nbX,mmfs=mmfs,Bys=by)
-        by = margyInv(1:nbY,mmfs=mmfs,Axs=ax)
+        ax = margxInv(1:nbX,mmfs=mmfs,theMu0ys=by)
+        by = margyInv(1:nbY,mmfs=mmfs,theMux0s=ax)
         
         if(noSingles){
             rescale = H(ax,by)
@@ -84,8 +84,8 @@ ipfp <- function(market, xFirst=T, notifications=TRUE, debugmode=FALSE, tol=1e-1
     }
     # Construct the equilibrium outcome based on ax and by obtained from above
     mu = M(mmfs,ax,by)  
-    mux0 = Mx0(mmfs,ax)
-    mu0y = M0y(mmfs,by)
+    mux0 = ax
+    mu0y = by
     #
     U = log(mu/ mux0)          # We'll suppress this soon
     V = t(log(t(mu) / mu0y))  # We'll suppress this soon
@@ -150,12 +150,12 @@ parIpfp <- function(market, xFirst=T, notifications=TRUE, debugmode=FALSE, tol=1
     val = c(ax,by)
     
     #Solve for ax and then by
-    ax = unlist(parLapply(cl=cl, X = seqX, margxInv, mmfs=mmfs,Bys=by))
-    by = unlist(parLapply(cl=cl, X = seqY, margyInv, mmfs=mmfs,Axs=ax))
+    ax = unlist(parLapply(cl=cl, X = seqX, margxInv, mmfs=mmfs,theMu0ys=by))
+    by = unlist(parLapply(cl=cl, X = seqY, margyInv, mmfs=mmfs,theMux0s=ax))
    
     
-    # ax = unlist(margxInv(1:nbX,mmfs=mmfs,Bys=by))
-    # by = unlist(margyInv(1:nbY,mmfs=mmfs,Axs=ax))
+    # ax = unlist(margxInv(1:nbX,mmfs=mmfs,theMu0ys=by))
+    # by = unlist(margyInv(1:nbY,mmfs=mmfs,theMux0s=ax))
     
     if(noSingles){
       rescale = H(ax,by)
@@ -177,8 +177,8 @@ parIpfp <- function(market, xFirst=T, notifications=TRUE, debugmode=FALSE, tol=1
   }
   # Construct the equilibrium outcome based on ax and by obtained from above
   mu = M(mmfs,ax,by)  
-  mux0 = Mx0(mmfs,ax)
-  mu0y = M0y(mmfs,by)
+  mux0 = ax
+  mu0y = by
   #
   U = log(mu/ mux0)          # We'll suppress this soon
   V = t(log(t(mu) / mu0y))  # We'll suppress this soon
