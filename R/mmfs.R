@@ -121,7 +121,7 @@ mmfsTranspose.TUmmfs <- function(mmfs)
 M.TUmmfs <- function(mmfs, mux0s, mu0ys, xs=1:length(mmfs$n), ys=1:length(mmfs$m))
 {
   term_1 = mmfs$K[xs,ys]
-  term_2 = sqrt(mux0s[xs] %*% t(mu0ys[ys]))
+  term_2 = sqrt(mux0s %*% t(mu0ys))
   #
   ret = term_1 * term_2
   #
@@ -225,8 +225,8 @@ mmfsTranspose.NTUmmfs <- function(mmfs)
 #
 M.NTUmmfs <- function(mmfs, mux0s, mu0ys, xs=1:length(mmfs$n), ys=1:length(mmfs$m))
 {
-  term_1 = mux0s[xs] * mmfs$A[xs,ys]
-  term_2 = t( mu0ys[ys] * t(mmfs$B[xs,ys] ))
+  term_1 = mux0s * mmfs$A[xs,ys]
+  term_2 = t( mu0ys * t(mmfs$B[xs,ys] ))
   #
   ret = pmin(term_1, term_2)
   #
@@ -318,8 +318,8 @@ mmfsTranspose.LTUmmfs <- function(mmfs)
 #
 M.LTUmmfs <- function(mmfs, mux0s, mu0ys, xs=1:length(mmfs$n), ys=1:length(mmfs$m))
 {
-  term_1 = mux0s[xs]^mmfs$lambda[xs,ys]
-  term_2 = t( mu0ys[ys]^t(mmfs$aux_zeta[xs,ys]) )
+  term_1 = mux0s^mmfs$lambda[xs,ys]
+  term_2 = t( mu0ys^t(mmfs$aux_zeta[xs,ys]) )
   term_3 = mmfs$K[xs,ys]
   #
   ret = term_1 * term_2 * term_3
@@ -407,8 +407,8 @@ mmfsTranspose.ETUmmfs <- function(mmfs)
 #
 M.ETUmmfs <- function(mmfs, mux0s, mu0ys, xs=1:length(mmfs$n), ys=1:length(mmfs$m))
 {
-  term_1 = mmfs$C[xs,ys] * (mux0s[xs]^mmfs$kappa[xs,ys])
-  term_2 = mmfs$D[xs,ys] * t(mu0ys[ys]^t(mmfs$kappa[xs,ys]))
+  term_1 = mmfs$C[xs,ys] * (mux0s^mmfs$kappa[xs,ys])
+  term_2 = mmfs$D[xs,ys] * t(mu0ys^t(mmfs$kappa[xs,ys]))
   #
   ret = ((term_1 + term_2)/2)^(1/mmfs$kappa[xs,ys])
   #
