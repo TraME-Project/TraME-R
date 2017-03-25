@@ -199,7 +199,7 @@ dtheta_mu <- function(model, theta, dtheta=diag(length(theta)))
   check_3 = (market$arumsG$sigma == market$arumsH$sigma)
   
   if(check_1 && check_2 && check_3){
-    ret = dtheta_mu_logit(model,market,theta,dtheta)
+    ret = dtheta_mu_mfe(model,market,theta,dtheta)
   }else{
     ret = dtheta_mu_default(model,market,theta,dtheta)
   }

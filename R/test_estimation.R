@@ -61,7 +61,7 @@ test_loglikelihood <- function(seed=777, nbX=5, nbY=4, dX=3, dY=2)
     message(paste0('Time elapsed - numerical: ', round((proc.time()-tsf)["elapsed"],5), 's.')) 
     #
     tsf = proc.time()    
-    dmulogit=dtheta_mu_logit(TUlogitmodel,market,theta0,dtheta)
+    dmulogit=dtheta_mu_mfe(TUlogitmodel,market,theta0,dtheta)
     message(paste0('Time elapsed - logit: ', round((proc.time()-tsf)["elapsed"],5), 's.')) 
     #
     mu = mudmu$mu 
