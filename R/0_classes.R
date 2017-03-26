@@ -50,6 +50,8 @@ mmfsTranspose <- function(mmfs) UseMethod("mmfsTranspose")
 
 M <- function(mmfs,...) UseMethod("M")
 
+dtheta_M <- function (mmfs, ...) UseMethod("dtheta_M")
+
 dmux0s_M <- function (mmfs,mux0s,mu0ys) UseMethod("dmux0s_M")
 
 dmu0ys_M <- function (mmfs,mux0s,mu0ys) UseMethod("dmu0ys_M")
