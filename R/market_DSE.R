@@ -19,12 +19,11 @@
 ##
 ################################################################################
 
-marketTranspose <- function(market)
+marketTranspose.DSE <- function(market)
 {
-  thelist=list(types = market$types,
-               n=market$m, m=market$n, 
+  thelist=list(n=market$m, m=market$n, 
+               
                neededNorm=normalizationTranspose(market$neededNorm),
-               mmfs = mmfsTranspose(market$mmfs),
                arumsG=market$arumsH, arumsH=market$arumsG,
                transfers=transfersTranspose(market$transfers))
   #
@@ -32,7 +31,7 @@ marketTranspose <- function(market)
   names = names(market)
   # here, transpose additional elements; add 1 to add each time
   if(length(names) > length(thelist) + add){
-    message("Warning: in bipartite market transposition, 
+    message("Warning: in bipartite market transposition (DSE), 
          some elements have not been copied.")
   }
   #
@@ -150,7 +149,7 @@ build_market_TU_none <- function(n, m, phi, neededNorm=NULL)
   noneM = build_none(nbX,nbY)
   noneW = build_none(nbY,nbX)
   #
-  ret = list(types = "itu-rum",
+  ret = list(kind = "TU_none",
              n=n, m=m,
              arumsG=noneM, arumsH=noneW,
              transfers=TUs,

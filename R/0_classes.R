@@ -44,6 +44,8 @@ Gbarx <- function(arums, ...) UseMethod("Gbarx")
 
 simul <- function (arums, ...) UseMethod("simul")
 
+marketTranspose <- function(market) UseMethod("marketTranspose")
+
 # mmfs class
 
 mmfsTranspose <- function(mmfs) UseMethod("mmfsTranspose")
