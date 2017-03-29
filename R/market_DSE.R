@@ -22,7 +22,7 @@
 marketTranspose.DSE <- function(market)
 {
   thelist=list(n=market$m, m=market$n, 
-               
+               kind = market$kind,
                neededNorm=normalizationTranspose(market$neededNorm),
                arumsG=market$arumsH, arumsH=market$arumsG,
                transfers=transfersTranspose(market$transfers))
@@ -154,12 +154,10 @@ build_market_TU_none <- function(n, m, phi, neededNorm=NULL)
              arumsG=noneM, arumsH=noneW,
              transfers=TUs,
              neededNorm=neededNorm)
-  class(ret) = "TU_none"
+  class(ret) = "DSE"
   #
   return(ret)  
 }
-
-solveEquilibrium.TU_none = oapLP
 
 build_market_TU_general <- function(n, m, phi, arumsG, arumsH, neededNorm=NULL)
 {
@@ -172,17 +170,16 @@ build_market_TU_general <- function(n, m, phi, arumsG, arumsH, neededNorm=NULL)
   #
   TUs = build_TUs(phi)
   #
-  ret = list(types = "itu-rum",
+  ret = list(kind = "TU-general",
              n=n, m=m,
              arumsG=arumsG, arumsH=arumsH,
              transfers=TUs,
              neededNorm=neededNorm)
-  class(ret) = "TU_general"
+  class(ret) = "DSE"
   #
   return(ret)
 }
 
-solveEquilibrium.TU_general = maxWelfare
 
 build_market_TU_empirical <- function(n, m, phi, arumsG, arumsH, nbDraws, seed=NULL, neededNorm=NULL)
 {
@@ -198,17 +195,16 @@ build_market_TU_empirical <- function(n, m, phi, arumsG, arumsH, nbDraws, seed=N
   #
   TUs = build_TUs(phi)
   #
-  ret = list(types = "itu-rum",
+  ret = list(kind = "TU-empirical",
              n=n, m=m,
              arumsG=arumsGsim, arumsH=arumsHsim,
              transfers=TUs,
              neededNorm=neededNorm)
-  class(ret) = "TU_empirical"
+  class(ret) = "DSE"
   #
   return(ret)
 }
 
-solveEquilibrium.TU_empirical = CupidsLP
 
 build_market_NTU_none <- function(n, m, alpha, gamma, neededNorm=NULL)
 {
@@ -223,17 +219,16 @@ build_market_NTU_none <- function(n, m, alpha, gamma, neededNorm=NULL)
   noneM = build_none(nbX,nbY)
   noneW = build_none(nbY,nbX)
   #
-  ret = list(types = "itu-rum",
+  ret = list(kind = "NTU_none",
              n=n, m=m,
              arumsG=noneM, arumsH=noneW,
              transfers=NTUs,
              neededNorm=neededNorm)
-  class(ret) = "NTU_none"
+  class(ret) = "DSE"
   #
   return(ret)
 }
 
-solveEquilibrium.NTU_none = darum
 
 build_market_NTU_general <- function(n, m, alpha, gamma, arumsG, arumsH, neededNorm=NULL)
 {
@@ -243,18 +238,17 @@ build_market_NTU_general <- function(n, m, alpha, gamma, arumsG, arumsH, neededN
   #
   NTUs = build_NTUs(alpha,gamma)
   #
-  ret = list(types = "itu-rum",
+  ret = list(kind = "NTU-general",
              alpha=alpha, gamma=gamma,
              n=n,m=m,
              arumsG=arumsG, arumsH=arumsH,
              transfers=NTUs,
              neededNorm=neededNorm)
-  class(ret) = "NTU_general"
+  class(ret) = "DSE"
   #
   return(ret)
 }
 
-solveEquilibrium.NTU_general = darum
 
 build_market_LTU_none <- function(n, m, lambda, phi, neededNorm=NULL)
 {
@@ -269,12 +263,12 @@ build_market_LTU_none <- function(n, m, lambda, phi, neededNorm=NULL)
   noneM = build_none(nbX,nbY)
   noneW = build_none(nbY,nbX)
   #
-  ret = list(types = "itu-rum",
+  ret = list(kind = "LTU_none",
              n=n, m=m,
              arumsG=noneM, arumsH=noneW,
              transfers=LTUs,
              neededNorm=neededNorm)
-  class(ret) = "LTU_none"
+  class(ret) = "DSE"
   #
   return(ret)
 }
@@ -296,19 +290,14 @@ build_market_LTU_logit <- function(n, m, lambda, phi, sigma=1, neededNorm=NULL)
   LTUs = build_LTUs(lambda,phi)
   logitM = build_logit(nbX,nbY,sigma=sigma,outsideOption=outsideOption)
   logitW = build_logit(nbY,nbX,sigma=sigma,outsideOption=outsideOption)
-  # 
-  LTUmmfs = build_LTUmmfs(n,m,lambda,exp(phi/sigma),neededNorm)
   #
-  ret = list(types = c("itu-rum","mfe"),
+  ret = list(kind = c("LTU-logit"),
              n=n, m=m,
              neededNorm=neededNorm,
-             #
              arumsG=logitM, arumsH=logitW,
-             transfers=LTUs,
-             #
-             mmfs = LTUmmfs
+             transfers=LTUs
   )
-  class(ret) = "LTU_logit"
+  class(ret) = "DSE"
   #
   return(ret)
 }
@@ -327,37 +316,30 @@ build_market_ETU_logit <- function(n, m, alpha,gamma,tau,sigma=1, neededNorm=NUL
   logitM = build_logit(nbX,nbY,sigma,outsideOption=is.null(neededNorm))
   logitW = build_logit(nbY,nbX,sigma,outsideOption=is.null(neededNorm))
   #
-  ETUmmfs = build_ETUmmfs(n,m,exp(-alpha/tau),exp(-gamma/tau),-1/tau,neededNorm)
-  #
-  ret = list(types = c("itu-rum","mfe"),
+  ret = list(kind = c("ETU_logit"),
              n=n, m=m,
              neededNorm=neededNorm,
-             #
              arumsG=logitM, arumsH=logitW,
-             transfers=ETUs,
-             #
-             mmfs = ETUmmfs
+             transfers=ETUs
   ) 
-  class(ret) = "ETU_logit"
+  class(ret) = "DSE"
   #
   return(ret)
 }
 #
-solveEquilibrium.ETU_logit = ipfp
+# solveEquilibrium.ETU_logit = ipfp
 #
 build_market_ITU_general <- function(n, m, arumsG, arumsH, transfers, neededNorm=NULL)
 {
-  ret = list(types = "itu-rum",
+  ret = list(kind = "ITU_general",
              n=n, m=m,
              arumsG=arumsG, arumsH=arumsH,
              transfers=transfers,
              neededNorm=neededNorm)
-  class(ret) = "ITU_general"
+  class(ret) = "DSE"
   #
   return(ret)
 }
-#
-solveEquilibrium.ITU_general = jacobi
 #
 build_market_NTU_logit <- function(n, m, alpha, gamma, sigma=1, neededNorm=NULL)
 {
@@ -372,23 +354,18 @@ build_market_NTU_logit <- function(n, m, alpha, gamma, sigma=1, neededNorm=NULL)
   logitM = build_logit(nbX,nbY,sigma=sigma,outsideOption=is.null(neededNorm))
   logitW = build_logit(nbY,nbX,sigma=sigma,outsideOption=is.null(neededNorm))
   #
-  NTUmmfs = build_NTUmmfs(n,m,exp(alpha/sigma),exp(gamma/sigma),neededNorm)
-  #
-  ret = list(types = c("itu-rum","mfe"),
+  ret = list(kind = c("NTU_logit"),
              n=n,m=m,
              neededNorm=neededNorm,
-             #
              arumsG=logitM,arumsH=logitW,
-             transfers=NTUs,
-             #
-             mmfs = NTUmmfs
+             transfers=NTUs
   )
-  class(ret) = "NTU_logit"
+  class(ret) = "DSE"
   #
   return(ret)
 }
 
-solveEquilibrium.NTU_logit = ipfp
+# solveEquilibrium.NTU_logit = ipfp
 
 
 build_market_TU_logit <- function(n, m, phi, sigma=1, neededNorm=NULL)
@@ -404,21 +381,16 @@ build_market_TU_logit <- function(n, m, phi, sigma=1, neededNorm=NULL)
   logitM = build_logit(nbX,nbY,sigma=sigma,outsideOption=is.null(neededNorm))
   logitW = build_logit(nbY,nbX,sigma=sigma,outsideOption=is.null(neededNorm))
   #
-  TUmmfs = build_TUmmfs(n,m,exp(phi/(2*sigma)),neededNorm)
-  #
-  ret = list(types = c("itu-rum","mfe"),
+  ret = list(kind = c("TU_logit"),
              n=n,m=m,
              neededNorm=neededNorm,
-             #
              arumsG=logitM, arumsH=logitW,
-             transfers=TUs,
-             #
-             mmfs = TUmmfs
+             transfers=TUs
   )
-  class(ret) = "TU_logit"
+  class(ret) = "DSE"
   #
   return(ret)
 }
 
-solveEquilibrium.TU_logit = ipfp
+# solveEquilibrium.TU_logit = ipfp
 

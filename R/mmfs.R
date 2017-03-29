@@ -90,9 +90,9 @@ margyInv.default <- function(ys, mmfs, theMux0s)
 }
 #
 ################################################################################
-########################             TU MMfs            ########################
+########################           geo MMfs             ########################
 ################################################################################
-build_TUmmfs <- function(n,m,K,neededNorm)
+build_geommfs <- function(n,m,K,neededNorm)
 {
   ret = list(n=n,
              m=m,
@@ -101,11 +101,11 @@ build_TUmmfs <- function(n,m,K,neededNorm)
              neededNorm=neededNorm,
              K = K
   )
-  class(ret)="TUmmfs"
+  class(ret)="geommfs"
   return(ret)
 }
 #
-mmfsTranspose.TUmmfs <- function(mmfs)
+mmfsTranspose.geommfs <- function(mmfs)
 {
   ret = list(n=mmfs$m,
              m=mmfs$n,
@@ -114,11 +114,11 @@ mmfsTranspose.TUmmfs <- function(mmfs)
              neededNorm=normalizationTranspose(mmfs$neededNorm),
              K = t(mmfs$K)
   )
-  class(ret)="TUmmfs"
+  class(ret)="geommfs"
   return(ret)
 }
 #
-M.TUmmfs <- function(mmfs, mux0s, mu0ys, xs=1:length(mmfs$n), ys=1:length(mmfs$m))
+M.geommfs <- function(mmfs, mux0s, mu0ys, xs=1:length(mmfs$n), ys=1:length(mmfs$m))
 {
   term_1 = mmfs$K[xs,ys]
   term_2 = sqrt(mux0s %*% t(mu0ys))
@@ -128,7 +128,7 @@ M.TUmmfs <- function(mmfs, mux0s, mu0ys, xs=1:length(mmfs$n), ys=1:length(mmfs$m
   return(ret)
 }
 # 
-dmux0s_M.TUmmfs <- function (mmfs,mux0s,mu0ys)
+dmux0s_M.geommfs <- function (mmfs,mux0s,mu0ys)
 {
   term_1 = mmfs$K / 2
   term_2 = sqrt( (1/mux0s) %*% t(mu0ys))
@@ -138,7 +138,7 @@ dmux0s_M.TUmmfs <- function (mmfs,mux0s,mu0ys)
   return(ret)
 }
 #
-dmu0ys_M.TUmmfs <- function (mmfs,mux0s,mu0ys)
+dmu0ys_M.geommfs <- function (mmfs,mux0s,mu0ys)
 {
   term_1 = mmfs$K / 2
   term_2 = sqrt( mux0s %*% t(1/mu0ys))
@@ -148,7 +148,7 @@ dmu0ys_M.TUmmfs <- function (mmfs,mux0s,mu0ys)
   return(ret)
 }
 #
-dtheta_M.TUmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
+dtheta_M.geommfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
 {
   ret <- 0
   if(is.null(dtheta)){
@@ -159,7 +159,7 @@ dtheta_M.TUmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
   return(ret)
 }
 #
-margxInv.TUmmfs <- function(xs, mmfs, theMu0ys)
+margxInv.geommfs <- function(xs, mmfs, theMu0ys)
 {
   if (is.null(xs)) {xs = 1:length(mmfs$n)}
   #
@@ -176,7 +176,7 @@ margxInv.TUmmfs <- function(xs, mmfs, theMu0ys)
   return(ret)
 }
 #
-margyInv.TUmmfs <- function(ys, mmfs, theMux0s)
+margyInv.geommfs <- function(ys, mmfs, theMux0s)
 {
   if (is.null(ys)) {xs = 1:length(mmfs$m)}
   #
@@ -194,9 +194,9 @@ margyInv.TUmmfs <- function(ys, mmfs, theMux0s)
 }
 
 ################################################################################
-########################            NTU MMfs            ########################
+########################            min MMfs            ########################
 ################################################################################
-build_NTUmmfs <- function(n,m,A,B,neededNorm)
+build_minmmfs <- function(n,m,A,B,neededNorm)
 {
   ret = list(n=n,
              m=m,
@@ -205,11 +205,11 @@ build_NTUmmfs <- function(n,m,A,B,neededNorm)
              neededNorm=neededNorm,
              A = A,
              B = B)
-  class(ret)="NTUmmfs"
+  class(ret)="minmmfs"
   return(ret)
 }
 #
-mmfsTranspose.NTUmmfs <- function(mmfs)
+mmfsTranspose.minmmfs <- function(mmfs)
 {
   ret = list(n = mmfs$m,
              m = mmfs$n,
@@ -219,11 +219,11 @@ mmfsTranspose.NTUmmfs <- function(mmfs)
              A = t(mmfs$B),
              B = t(mmfs$A)
   )
-  class(ret)="NTUmmfs"
+  class(ret)="minmmfs"
   return(ret)
 }
 #
-M.NTUmmfs <- function(mmfs, mux0s, mu0ys, xs=1:length(mmfs$n), ys=1:length(mmfs$m))
+M.minmmfs <- function(mmfs, mux0s, mu0ys, xs=1:length(mmfs$n), ys=1:length(mmfs$m))
 {
   term_1 = mux0s * mmfs$A[xs,ys]
   term_2 = t( mu0ys * t(mmfs$B[xs,ys] ))
@@ -233,7 +233,7 @@ M.NTUmmfs <- function(mmfs, mux0s, mu0ys, xs=1:length(mmfs$n), ys=1:length(mmfs$
   return(ret)
 }
 # 
-dmux0s_M.NTUmmfs <- function (mmfs,mux0s,mu0ys)
+dmux0s_M.minmmfs <- function (mmfs,mux0s,mu0ys)
 {
   term_1 = mux0s * mmfs$A
   term_2 = t( mu0ys * t(mmfs$B ))
@@ -241,7 +241,7 @@ dmux0s_M.NTUmmfs <- function (mmfs,mux0s,mu0ys)
   return(ifelse(term1 <= term2,1,0) * mmfs$A)
 }
 #
-dmu0ys_M.NTUmmfs <- function (mmfs,mux0s,mu0ys)
+dmu0ys_M.minmmfs <- function (mmfs,mux0s,mu0ys)
 {
   term_1 = mux0s * mmfs$A
   term_2 = t( mu0ys * t(mmfs$B ))
@@ -249,7 +249,7 @@ dmu0ys_M.NTUmmfs <- function (mmfs,mux0s,mu0ys)
   return(ifelse(term1 >= term2,1,0) * mmfs$B)  
 }
 #
-dtheta_M.NTUmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
+dtheta_M.minmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
 {
   term_1 = mux0s * mmfs$A
   term_2 = t( mu0ys * t(mmfs$B ))
@@ -268,7 +268,7 @@ dtheta_M.NTUmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
   return(ret)
 }
 #
-margxInv.NTUmmfs = function(xs,mmfs,theMu0ys)
+margxInv.minmmfs = function(xs,mmfs,theMu0ys)
 {
   if (is.null(xs)) {xs = 1:length(mmfs$n)}
   if (!is.null(mmfs$neededNorm)) {stop('not supported yet')}
@@ -276,7 +276,7 @@ margxInv.NTUmmfs = function(xs,mmfs,theMu0ys)
   return(theaxs)
 }
 #
-margyInv.NTUmmfs = function(ys,mmfs,theMux0s)
+margyInv.minmmfs = function(ys,mmfs,theMux0s)
 {
   if (is.null(ys)) {ys = 1:length(mmfs$m)}
   if (!is.null(mmfs$neededNorm)) {stop('not supported yet')}
@@ -285,9 +285,9 @@ margyInv.NTUmmfs = function(ys,mmfs,theMux0s)
 }
 
 ################################################################################
-########################            LTU MMfs            ########################
+########################            cod MMfs            ########################
 ################################################################################
-build_LTUmmfs <- function(n,m,lambda,K,neededNorm)
+build_codmmfs <- function(n,m,lambda,K,neededNorm)
 {
   ret = list(n=n,
              m=m,
@@ -297,11 +297,11 @@ build_LTUmmfs <- function(n,m,lambda,K,neededNorm)
              lambda = lambda,
              K=K,
              aux_zeta = 1-lambda)
-  class(ret)="LTUmmfs"
+  class(ret)="codmmfs"
   return(ret)
 }
 #
-mmfsTranspose.LTUmmfs <- function(mmfs)
+mmfsTranspose.codmmfs <- function(mmfs)
 {
   ret = list(n=mmfs$m,
              m=mmfs$n,
@@ -312,11 +312,11 @@ mmfsTranspose.LTUmmfs <- function(mmfs)
              K=t(mmfs$K),
              aux_zeta = t(mmfs$lambda)
   )
-  class(ret)="LTUmmfs"
+  class(ret)="codmmfs"
   return(ret)
 }
 #
-M.LTUmmfs <- function(mmfs, mux0s, mu0ys, xs=1:length(mmfs$n), ys=1:length(mmfs$m))
+M.codmmfs <- function(mmfs, mux0s, mu0ys, xs=1:length(mmfs$n), ys=1:length(mmfs$m))
 {
   term_1 = mux0s^mmfs$lambda[xs,ys]
   term_2 = t( mu0ys^t(mmfs$aux_zeta[xs,ys]) )
@@ -328,7 +328,7 @@ M.LTUmmfs <- function(mmfs, mux0s, mu0ys, xs=1:length(mmfs$n), ys=1:length(mmfs$
 }
 #
 # 
-dmux0s_M.LTUmmfs <- function (mmfs,mux0s,mu0ys)
+dmux0s_M.codmmfs <- function (mmfs,mux0s,mu0ys)
 {
   term_1 = mmfs$lambda* mux0s^(mmfs$lambda-1)
   term_2 = t( mu0ys^t(mmfs$aux_zeta) )
@@ -339,7 +339,7 @@ dmux0s_M.LTUmmfs <- function (mmfs,mux0s,mu0ys)
   return(ret)
 }
 #
-dmu0ys_M.LTUmmfs <- function (mmfs,mux0s,mu0ys)
+dmu0ys_M.codmmfs <- function (mmfs,mux0s,mu0ys)
 {
   term_1 = mux0s^mmfs$lambda
   term_2 = mmfs$aux_zeta * t( mu0ys^t( mmfs$aux_zeta -1) )
@@ -350,7 +350,7 @@ dmu0ys_M.LTUmmfs <- function (mmfs,mux0s,mu0ys)
   return(ret)
 }
 #
-dtheta_M.LTUmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
+dtheta_M.codmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
 {
   term_1 = mux0s^(mmfs$lambda)
   term_2 = t( mu0ys^t(mmfs$aux_zeta) )
@@ -373,9 +373,9 @@ dtheta_M.LTUmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
 
 #
 ################################################################################
-########################            ETU MMfs            ########################
+########################            ces MMfs            ########################
 ################################################################################
-build_ETUmmfs <- function(n,m,C,D,kappa,neededNorm)
+build_cesmmfs <- function(n,m,C,D,kappa,neededNorm)
 {
   ret = list(n=n,
              m=m,
@@ -386,11 +386,11 @@ build_ETUmmfs <- function(n,m,C,D,kappa,neededNorm)
              D = D,
              kappa = kappa
   )
-  class(ret)="ETUmmfs"
+  class(ret)="cesmmfs"
   return(ret)
 }
 #
-mmfsTranspose.ETUmmfs <- function(mmfs)
+mmfsTranspose.cesmmfs <- function(mmfs)
 {
   ret = list(n = mmfs$m,
              m = mmfs$n,
@@ -401,11 +401,11 @@ mmfsTranspose.ETUmmfs <- function(mmfs)
              D =  t(mmfs$C),
              tauinv = t(mmfs$tauinv)
   )
-  class(ret)="ETUmmfs"
+  class(ret)="cesmmfs"
   return(ret)
 }
 #
-M.ETUmmfs <- function(mmfs, mux0s, mu0ys, xs=1:length(mmfs$n), ys=1:length(mmfs$m))
+M.cesmmfs <- function(mmfs, mux0s, mu0ys, xs=1:length(mmfs$n), ys=1:length(mmfs$m))
 {
   term_1 = mmfs$C[xs,ys] * (mux0s^mmfs$kappa[xs,ys])
   term_2 = mmfs$D[xs,ys] * t(mu0ys^t(mmfs$kappa[xs,ys]))
@@ -415,7 +415,7 @@ M.ETUmmfs <- function(mmfs, mux0s, mu0ys, xs=1:length(mmfs$n), ys=1:length(mmfs$
   return(ret)
 }
 #
-dmux0s_M.ETUmmfs <- function (mmfs,mux0s,mu0ys)
+dmux0s_M.cesmmfs <- function (mmfs,mux0s,mu0ys)
 {
   term_1 = mmfs$C * (mux0s^mmfs$kappa)
   term_2 = mmfs$D * t(mu0ys^t(mmfs$kappa))
@@ -426,7 +426,7 @@ dmux0s_M.ETUmmfs <- function (mmfs,mux0s,mu0ys)
   return( mmfs$kappa * mmfs$C * (mus / mux0s)^(1 - mmfs$kappa) /2 )
 }
 #
-dmu0ys_M.ETUmmfs <- function (mmfs,mux0s,mu0ys)
+dmu0ys_M.cesmmfs <- function (mmfs,mux0s,mu0ys)
 {
   term_1 = mmfs$C * (mux0s^mmfs$kappa)
   term_2 = mmfs$D * t(mu0ys^t(mmfs$kappa))
@@ -438,7 +438,7 @@ dmu0ys_M.ETUmmfs <- function (mmfs,mux0s,mu0ys)
 }
 #
 
-dtheta_M.ETUmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
+dtheta_M.cesmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
 {
   term_1 = mmfs$C * (mux0s^mmfs$kappa)
   term_2 = mmfs$D * t(mu0ys^t(mmfs$kappa))

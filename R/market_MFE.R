@@ -42,8 +42,88 @@ marketTranspose.MFE <- function(market)
 ########     Methods for MFE markets    #########
 #################################################
 # GEO <-> TU
+build_market_geoMFE <- function(n, m, K, neededNorm=NULL)
+{
+  if(!is.null(neededNorm) && (sum(n) != sum(m))){
+    stop("Normalization asked but sum(n) does not coincide with sum(m)")
+  }
+  #
+  nbX = length(n)
+  nbY = length(m)
+  #
+  mmfs = build_geommfs(n,m,K,neededNorm)
+  #
+  ret = list(kind = class(mmfs),
+             n=n,m=m,
+             neededNorm=neededNorm,
+             mmfs =mmfs
+  )
+  class(ret) = "MFE"
+  #
+  return(ret)
+}
 # CES <-> ETU
-# CD <-> LTU
+build_market_cesMFE <- function(n, m, C,D,kappa, neededNorm=NULL)
+{
+  if(!is.null(neededNorm) && (sum(n) != sum(m))){
+    stop("Normalization asked but sum(n) does not coincide with sum(m)")
+  }
+  #
+  nbX = length(n)
+  nbY = length(m)
+  #
+  mmfs = build_cesmmfs(n,m,C,D,kappa,neededNorm)
+  #
+  ret = list(kind = class(mmfs),
+             n=n,m=m,
+             neededNorm=neededNorm,
+             mmfs =mmfs
+  )
+  class(ret) = "MFE"
+  #
+  return(ret)
+}
+
+
+# cod <-> LTU
+build_market_codMFE <- function(n, m, lambda, K , neededNorm=NULL)
+{
+  if(!is.null(neededNorm) && (sum(n) != sum(m))){
+    stop("Normalization asked but sum(n) does not coincide with sum(m)")
+  }
+  if(is.null(neededNorm)){
+    outsideOption = TRUE
+  }else{
+    outsideOption = FALSE
+  }
+  mmfs = build_codmmfs(n,m,lambda,K,neededNorm)
+  #
+  ret = list(kind = class(mmfs),
+             n=n,m=m,
+             neededNorm=neededNorm,
+             mmfs =mmfs
+  )
+  class(ret) = "MFE"
+  #
+  return(ret)
+}
+
 # MIN <-> NTU
+build_market_minMFE <- function(n, m, A, B, neededNorm=NULL)
+{
+  if(!is.null(neededNorm) && (sum(n) != sum(m))){
+    stop("Normalization asked but sum(n) does not coincide with sum(m)")
+  }
+  mmfs = build_minmmfs(n,m,A,B,neededNorm)
+  #
+  ret = list(kind = class(mmfs),
+             n=n,m=m,
+             neededNorm=neededNorm,
+             mmfs =mmfs
+  )
+  class(ret) = "MFE"
+  #
+  return(ret)
+}
 
 
