@@ -53,20 +53,30 @@ solveEquilibrium.DSE <- function(market, xFirst=T, notifications=TRUE, debugmode
     }
     if (market$kind == "ITU_general")
     {method = "jacobi"}
+    if (market$kind == "ITU_general")
+    {method = "jacobi"}
+    if ( (class(market$arumsG) == "logit") & (class(market$arumsH) == "logit") & (market$arumsG$sigma==1) & (market$arumsH$sigma==1) )
+    {
+      method = "ipfp_DSE"
+    }
+    {method = "jacobi"}
+    
     #
     if (method == "unspec")
     { stop("Solver not known for this DSE market.")}
   }
   if (method == "oapLP")
-  {  return (oapLP(market, xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )}
+  {  return (oapLP(market, xFirst=xFirst, notifications=notifications) )}
   if (method == "maxWelfare")
-  {  return (maxWelfare(market, xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )}
+  {  return (maxWelfare(market, xFirst=xFirst, notifications=notifications, tol_rel=tol) )}
   if (method == "CupidsLP")
-  {  return (CupidsLP(market, xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )}
+  {  return (CupidsLP(market, xFirst=xFirst, notifications=notifications) )}
   if (method == "darum")
   {  return (darum(market, xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )}
   if (method == "jacobi")
-  {  return (jacobi(market, xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )}
+  {  return (jacobi(market, xFirst=xFirst, notifications=notifications, tol=tol ) )}
+  if (method == "IPFP_DSE")
+  {  return (ipfp(DSEToMFE(market), xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )}
   
   
 }
@@ -76,7 +86,7 @@ ipfp <- function(market, xFirst=T, notifications=TRUE, debugmode=FALSE, tol=1e-1
   # Computes equilibrium in the logit case via IPFP in the all-logit case
 {
   #
-  if (!("mfe" %in% market$types)) {stop("ipfp only defined for market whose types contains mme.")}
+  if (class(market) != "MFE") {stop("ipfp only applies to MFE markets.")}
   mmfs = market$mmfs
   noSingles = !is.null(mmfs$neededNorm)
   if(noSingles){

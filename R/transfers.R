@@ -102,6 +102,18 @@ WU.TU <- function(tr, Us, xs=1:tr$nbX, ys=1:tr$nbY) (2*Us - tr$phi[xs,ys])
 #
 WV.TU <- function(tr, Vs, xs=1:tr$nbX, ys=1:tr$nbY) (tr$phi[xs,ys] - 2*Vs)
 #
+PsiToM.TU <- function(tr,n,m,neededNorm)
+{
+  ret = list(n=n,
+             m=m,
+             nbX=length(n),
+             nbY=length(m),
+             neededNorm=neededNorm,
+             K = exp(tr$phi)
+  )
+  class(ret)="geommfs"
+  return(ret)
+}
 ################################################################################
 ########################         End of TU transfers         ###################
 ################################################################################
@@ -159,6 +171,20 @@ determineType.NTU <- function(tr, ...) (2)
 WU.NTU <- function(tr, Us, xs=1:tr$nbX, ys=1:tr$nbY) (Us - tr$alpha[xs,ys])
 #
 WV.NTU <- function(tr, Vs, xs=1:tr$nbX, ys=1:tr$nbY) (tr$gamma[xs,ys] - Vs)
+#
+PsiToM.NTU <- function(tr,n,m,neededNorm)
+{
+  ret = list(n=n,
+             m=m,
+             nbX=length(n),
+             nbY=length(m),
+             neededNorm=neededNorm,
+             A = exp(tr$alpha),
+             B = exp(tr$gamma))
+  class(ret)="minmmfs"
+  return(ret)
+}
+
 ################################################################################
 ########################        End of NTU transfers         ###################
 ################################################################################
@@ -236,6 +262,21 @@ WU.LTU <- function(tr, Us, xs=1:tr$nbX, ys=1:tr$nbY) ((Us - tr$phi[xs,ys])
 #
 WV.LTU <- function(tr, Vs, xs=1:tr$nbX, ys=1:tr$nbY) ( (tr$phi[xs,ys] - Vs) 
                                                        /  tr$lambda[xs,ys]  )
+#
+#
+PsiToM.LTU <- function(tr,n,m,neededNorm)
+{
+  ret = list(n=n,
+             m=m,
+             nbX=length(n),
+             nbY=length(m),
+             neededNorm=neededNorm,
+             lambda = tr$lambda,
+             K=exp(tr$phi),
+             aux_zeta = 1-tr$lambda)
+  class(ret)="codmmfs"
+  return(ret)
+}
 ################################################################################
 ########################        End of LTU transfers         ###################
 ################################################################################
@@ -358,6 +399,21 @@ WV.ETU <- function(tr, Vs, xs=1:tr$nbX, ys=1:tr$nbY)
   term_log = term_1 - term_2
   #
   ret = tr$tau[xs,ys] * log(term_log)
+}
+#
+PsiToM.ETU <- function(tr,n,m,neededNorm)
+{
+  ret = list(n=n,
+             m=m,
+             nbX=length(n),
+             nbY=length(m),
+             neededNorm=neededNorm,
+             C = exp(-tr$alpha / tr$tau),
+             D = exp(-tr$gamma / tr$tau),
+             kappa = -1/tr$tau
+  )
+  class(ret)="cesmmfs"
+  return(ret)
 }
 ################################################################################
 ########################        End of ETU transfers         ###################

@@ -61,17 +61,22 @@ dtheta_mu_default <- function(model, market, theta, dtheta=diag(length(theta)))
   #
   return(list(mu= c(mu),mux0s=mux0s, mu0ys=mu0ys,dmu=dmu))
 }
-
-
+XXXX
+# WE SHOULD SPLIT THIS INTO 2 HALVES: ONE WHICH OPERATES ON A TRUE MFE, ONE WHICH OPERAETES ON A TRUE ITU-LOGIT
 dtheta_mu_mfe <- function(model, market, theta, dtheta=diag(length(theta)))
 {
   nbX = length(market$n)
   nbY = length(market$m)
-  # here, a check that the model is indeed of class MFE
   rangeParams = dim(dtheta)[2]
-  
   dthetaM = dparam(model, dtheta)
-  mmfs = market$mmfs
+  if (class( market) == "DSE")
+  { mmfs = PsiToM(market$transfers, market$n,market$m,market$neededNorm ) }
+  else
+  {
+    if (class( market) == "MFE")
+    {mmfs = market$mmfs}
+    else (stop("Class of market not supported."))
+  }
   outcome = solveEquilibrium(market,notifications=FALSE,debugmode=FALSE)
   mu = outcome$mu
   mux0s = outcome$mux0
@@ -79,7 +84,8 @@ dtheta_mu_mfe <- function(model, market, theta, dtheta=diag(length(theta)))
   
   du_Ms = matrix(dmux0s_M(mmfs,mux0s,mu0ys),nrow=nbX)
   dv_Ms = matrix(dmu0ys_M(mmfs,mux0s,mu0ys),nrow=nbX)
-  #
+  # 
+  XXXXXXXXXXXXXXXXX #PROBLEM HERE -- dthetaM is really dthetaPsi
   dtheta_Ms = matrix(dtheta_M(mmfs,mux0s,mu0ys,dthetaM),nrow=tr$nbX*tr$nbY)
 
   dtheta_Ms_array = array(dtheta_Ms ,dim=c(tr$nbX,tr$nbY,rangeParams))

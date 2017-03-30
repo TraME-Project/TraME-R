@@ -35,9 +35,10 @@ test_ipfp <- function(seed=777, nbX=18, nbY=5)
   lambda = matrix(1+runif(nbX*nbY),nrow=nbX)
   zeta = matrix(1+runif(nbX*nbY),nrow=nbX)
   
-  m1 = build_market_TU_logit(n,m,alpha+gamma,neededNorm = defaultNorm(noSingles))
-  m2 = build_market_NTU_logit(n,m,alpha,gamma,neededNorm = defaultNorm(noSingles))
-  m3 = build_market_LTU_logit(n,m,lambda/(lambda+zeta),(lambda*alpha+zeta*gamma)/(lambda+zeta),neededNorm = defaultNorm(noSingles))
+
+  m1 = DSEToMFE(build_market_TU_logit(n,m,alpha+gamma,neededNorm = defaultNorm(noSingles)) ) 
+  m2 = DSEToMFE(build_market_NTU_logit(n,m,alpha,gamma,neededNorm = defaultNorm(noSingles)) )
+  m3 = DSEToMFE(build_market_LTU_logit(n,m,lambda/(lambda+zeta),(lambda*alpha+zeta*gamma)/(lambda+zeta),neededNorm = defaultNorm(noSingles)) )
   #
   r1 = ipfp(m1,xFirst=TRUE,notifications=TRUE)
   message("Solution of TU-logit problem using ipfp:")
@@ -78,9 +79,11 @@ test_nodalNewton <- function(seed=777, nbX=17, nbY=15, nbDraws=1e3)
   gamma = matrix(runif(nbX*nbY),nrow=nbX)
   #
   m1 = build_market_TU_logit(n,m,phi)
+  m1_MFE = DSEToMFE(m1)
   m2 = build_market_NTU_logit(n,m,alpha,gamma)
+  m2_MFE = DSEToMFE(m2)
   
-  r1 = ipfp(m1,xFirst=TRUE,notifications=TRUE)
+  r1 = ipfp(m1_MFE,xFirst=TRUE,notifications=TRUE)
   r1bis = nodalNewton(m1,xFirst=TRUE,notifications=TRUE)
   #
   message("Solution of TU-logit:")
@@ -89,7 +92,7 @@ test_nodalNewton <- function(seed=777, nbX=17, nbY=15, nbDraws=1e3)
   print(r1bis$mux0[1:min(nbX,10)])
   #
   
-  r2 = ipfp(m2,xFirst=TRUE,notifications=TRUE)
+  r2 = ipfp(m2_MFE,xFirst=TRUE,notifications=TRUE)
   r2bis = nodalNewton(m2,xFirst=TRUE,notifications=TRUE)
   #
   message("Solution of NTU-logit:")
@@ -118,7 +121,8 @@ test_arcNewton <- function(seed=777, nbX=5, nbY=3, nbDraws=1e3)
     phi =  matrix(runif(nbX*nbY),nrow=nbX)
     #
     m1 = build_market_TU_logit(n,m,phi)
-    r1 = ipfp(m1,xFirst=TRUE,notifications=TRUE)
+    m1_MFE=DSEToMFE(m1)
+    r1 = ipfp(m1_MFE,xFirst=TRUE,notifications=TRUE)
     r1bis = arcNewton(m1,xFirst=TRUE,notifications=TRUE)
     #
     message("Solution of TU-logit:")
@@ -154,7 +158,8 @@ test_maxWelfare = function(seed=777, nbX=5, nbY=3, nbDraws=1e3)
     phi =  matrix(runif(nbX*nbY),nrow=nbX)
     #
     m1 = build_market_TU_logit(n,m,phi)
-    r1 = ipfp(m1,xFirst=TRUE,notifications=TRUE)
+    m1_MFE = DSEToMFE(m1)
+    r1 = ipfp(m1_MFE,xFirst=TRUE,notifications=TRUE)
     r1bis = maxWelfare(m1,xFirst=TRUE,notifications=TRUE)
     #
     message("Solution of TU-logit:")

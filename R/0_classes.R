@@ -48,6 +48,8 @@ marketTranspose <- function(market) UseMethod("marketTranspose")
 
 # mmfs class
 
+PsiToM <- function(tr,...) UseMethod("PsiToM")
+
 mmfsTranspose <- function(mmfs) UseMethod("mmfsTranspose")
 
 M <- function(mmfs,...) UseMethod("M")

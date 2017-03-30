@@ -41,6 +41,23 @@ marketTranspose.MFE <- function(market)
 #################################################
 ########     Methods for MFE markets    #########
 #################################################
+#
+DSEToMFE <- function(market)
+{
+  if ((class(market) != "DSE")  | (class(market$arumsG) != "logit") | (class(market$arumsH) != "logit") | (market$arumsG$sigma != 1 ) | (market$arumsG$sigma != 1) )
+  { stop("market object to convert is not DSE; or not logit with sigma=1") }
+  mmfs = PsiToM(market$transfers,market$n,market$m,market$neededNorm)
+  
+  ret = list(kind = class(mmfs),
+             n=market$n, m=market$m,
+             neededNorm=market$neededNorm,
+             mmfs=mmfs
+  )
+  class(ret) = "MFE"
+  #
+  return(ret)  
+}
+
 # GEO <-> TU
 build_market_geoMFE <- function(n, m, K, neededNorm=NULL)
 {
