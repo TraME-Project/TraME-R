@@ -61,7 +61,7 @@ test_loglikelihood <- function(seed=777, nbX=5, nbY=4, dX=3, dY=2)
     message(paste0('Time elapsed - numerical: ', round((proc.time()-tsf)["elapsed"],5), 's.')) 
     #
     tsf = proc.time()    
-    dmulogit=dtheta_mu_mfe(TUlogitmodel,market,theta0,dtheta)
+    dmulogit=dtheta_mu_logit(TUlogitmodel,market,theta0,dtheta)
     message(paste0('Time elapsed - logit: ', round((proc.time()-tsf)["elapsed"],5), 's.')) 
     #
     mu = mudmu$mu 
@@ -106,7 +106,7 @@ test_mle <- function(seed=777, nbX=80, nbY=72, noiseScale=0.1, dX=3, dY=3)
     #
     mktLogit = build_market_TU_logit(n,m,phi)
     noise = matrix(1+ noiseScale*rnorm(nbX*nbY),nrow=nbX)
-    muhat = ipfp(mktLogit, T, F)$mu * noise
+    muhat = solveEquilibrium(mktLogit, xFirst=T, notifications =F)$mu * noise
     #
     TUlogitmodel = buildModel_TU_logit(array(kronecker(ys,xs) , dim=c(nbX,nbY,dX*dY) ),n,m)
     thetahat = mle(TUlogitmodel,muhat, print_level=0)$thetahat
@@ -145,7 +145,7 @@ test_mme <- function(seed=777, nbX=80, nbY=72, noiseScale=0.1, dX=3, dY=3)
     #
     mktLogit = build_market_TU_logit(n,m,phi)
     noise = matrix(1 + noiseScale*rnorm(nbX*nbY),nrow=nbX)
-    muhat = ipfp(mktLogit, T, F)$mu * noise
+    muhat = solveEquilibrium(mktLogit, xFirst=T, notifications=F)$mu * noise
     #
     TUlogitmodel = buildModel_TU_logit(array(kronecker(ys,xs) , dim=c(nbX,nbY,dX*dY) ),n,m)
     thetahat = mme(TUlogitmodel,muhat, print_level=0)$thetahat

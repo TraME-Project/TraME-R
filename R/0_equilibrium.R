@@ -49,17 +49,14 @@ solveEquilibrium.DSE <- function(market, xFirst=T, notifications=TRUE, debugmode
     if ( (market$kind == "NTU_none") | (market$kind == "NTU_general"))
     {method = "darum"}
     if (market$kind == "LTU_none")
-    { # not yet implmented
+    { # not yet implemented
     }
-    if (market$kind == "ITU_general")
-    {method = "jacobi"}
     if (market$kind == "ITU_general")
     {method = "jacobi"}
     if ( (class(market$arumsG) == "logit") & (class(market$arumsH) == "logit") & (market$arumsG$sigma==1) & (market$arumsH$sigma==1) )
     {
       method = "ipfp_DSE"
     }
-    {method = "jacobi"}
     
     #
     if (method == "unspec")
@@ -75,7 +72,7 @@ solveEquilibrium.DSE <- function(market, xFirst=T, notifications=TRUE, debugmode
   {  return (darum(market, xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )}
   if (method == "jacobi")
   {  return (jacobi(market, xFirst=xFirst, notifications=notifications, tol=tol ) )}
-  if (method == "IPFP_DSE")
+  if (method == "ipfp_DSE")
   {  return (ipfp(DSEToMFE(market), xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )}
   
   
