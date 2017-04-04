@@ -84,7 +84,7 @@ test_nodalNewton <- function(seed=777, nbX=17, nbY=15, nbDraws=1e3)
   m2_MFE = DSEToMFE(m2)
   
   r1 = ipfp(m1_MFE,xFirst=TRUE,notifications=TRUE)
-  r1bis = nodalNewton(m1,xFirst=TRUE,notifications=TRUE)
+  r1bis = nodalNewton(m1_MFE,xFirst=TRUE,notifications=TRUE)
   #
   message("Solution of TU-logit:")
   message("mux0 using (i) IPFP and (ii) nodalNewton:")
@@ -93,7 +93,7 @@ test_nodalNewton <- function(seed=777, nbX=17, nbY=15, nbDraws=1e3)
   #
   
   r2 = ipfp(m2_MFE,xFirst=TRUE,notifications=TRUE)
-  r2bis = nodalNewton(m2,xFirst=TRUE,notifications=TRUE)
+  r2bis = nodalNewton(m2_MFE,xFirst=TRUE,notifications=TRUE)
   #
   message("Solution of NTU-logit:")
   message("mu using (i) IPFP and (ii) nodalNewton:")

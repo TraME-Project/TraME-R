@@ -109,7 +109,7 @@ PsiToM.TU <- function(tr,n,m,neededNorm)
              nbX=length(n),
              nbY=length(m),
              neededNorm=neededNorm,
-             K = exp(tr$phi)
+             K = exp(tr$phi / 2)
   )
   class(ret)="geommfs"
   return(ret)

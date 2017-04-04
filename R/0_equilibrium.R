@@ -32,6 +32,8 @@ solveEquilibrium.MFE <- function(market, xFirst=T, notifications=TRUE, debugmode
   {return (ipfp(market, xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )}
   if (method == "parIpfp")
   {return (parIpfp(market, xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )}
+  if (method == "nodalNewton")
+  {return (nodalNewton(market, xFirst=xFirst, notifications=notifications, tol=tol) )}
   #    
   stop("Required method not available yet.")
 }
@@ -74,6 +76,8 @@ solveEquilibrium.DSE <- function(market, xFirst=T, notifications=TRUE, debugmode
   {  return (jacobi(market, xFirst=xFirst, notifications=notifications, tol=tol ) )}
   if (method == "ipfp_DSE")
   {  return (ipfp(DSEToMFE(market), xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )}
+  if (method == "nodalNewton_DSE")
+  {  return (nodalNewton(DSEToMFE(market), xFirst=xFirst, notifications=notifications, tol=tol) )}
   
   
 }
@@ -246,8 +250,11 @@ parIpfp <- function(market, xFirst=T, notifications=TRUE, debugmode=FALSE, tol=1
   return(outcome)
 }
 
-nodalNewton <- function(market, xFirst=TRUE, notifications=FALSE, sigma = 1E-6, maxiter = 100, tol = 1e-3, xtol = 1e-3)
+nodalNewton <- function(market, xFirst=TRUE, notifications=FALSE, maxiter = 300, tol = 1e-3)
 {
+  #
+  if (class(market) != "MFE") {stop("nodalNewton only applies to MFE markets.")}
+  mmfs = market$mmfs
   if(!is.null(market$neededNorm)){
     stop("nodalNewton does not yet allow for the case without unmatched agents.")
   }
@@ -255,30 +262,23 @@ nodalNewton <- function(market, xFirst=TRUE, notifications=FALSE, sigma = 1E-6, 
     message('Solving for equilibrium in MFE problem using nodalNewton.')
   }
   #
-  if((class(market$arumsG)!="logit") || (class(market$arumsH)!="logit")){
-    stop("Error: Heterogeneities are not all logit.")
-  }
-  if(market$arumsG$sigma != market$arumsH$sigma){
-    stop("Error: scaling parameters of the logit differs on both sides of the market.")
-  }
-  #
   n = market$n
   m = market$m
-  sigma = market$arumsG$sigma
-  tr = market$transfers
+  nbX = length(n)
+  nbY = length(m)
   #
-  theus = rep(0,tr$nbX)
-  thevs = rep(0,tr$nbY)
-  themux0s = rep(0,tr$nbX)
-  themu0ys = rep(0,tr$nbY)
-  themu = matrix(0,tr$nbX,tr$nbY)
+  theus = rep(0,nbX)
+  thevs = rep(0,nbY)
+  themux0s = rep(0,nbX)
+  themu0ys = rep(0,nbY)
+  themu = matrix(0,nbX,nbY)
   #
   Z <- function(uv)
   {
-    theus <<- uv[1:tr$nbX]
-    thevs <<- uv[(tr$nbX+1):(tr$nbX+tr$nbY)]
-    themux0s <<- exp(- theus / sigma)
-    themu0ys <<- exp(- thevs / sigma)
+    theus <<- uv[1:nbX]
+    thevs <<- uv[(nbX+1):(nbX+nbY)]
+    themux0s <<- exp(- theus )
+    themu0ys <<- exp(- thevs )
     themu <<- M(market$mmfs,themux0s,themu0ys)
     return( c(themux0s + apply(themu,1,sum) - n,
               themu0ys + apply(themu,2,sum) - m ))
@@ -286,28 +286,22 @@ nodalNewton <- function(market, xFirst=TRUE, notifications=FALSE, sigma = 1E-6, 
   #
   JZ <- function(uv)
   {
-    #     theus = uv[1:tr$nbX]
-    #     thevs = uv[(tr$nbX+1):(tr$nbX+tr$nbY)] ## note -- this is redundant with the computation of Z
-    #     themux0s = exp(- theus / sigma) ## note -- this is redundant with the computation of Z
-    #     themu0ys = exp(- thevs / sigma)  ## note -- this is redundant with the computation of Z
-    #     themu = M(market$mmfs,themux0s,themu0ys) ## note -- this is redundant with the computation of Z
-    du_psis = du_Psi(tr,theus,thevs)
-    dv_psis = 1 - du_psis
-    Delta11 = diag(themux0s + apply(themu*du_psis,1,sum),nrow=tr$nbX)
-    Delta22 = diag(themu0ys + apply(themu*dv_psis,2,sum),nrow=tr$nbY)
-    Delta12 = themu * dv_psis
-    Delta21 = t(themu * du_psis)
-    Delta = rbind(cbind(Delta11,Delta12),cbind(Delta21,Delta22))
-    hess = (-1/sigma) * Delta
+    thedmux0s_M = dmux0s_M(mmfs,themux0s,themu0ys)
+    thedmu0ys_M = dmu0ys_M(mmfs,themux0s,themu0ys)
+    Delta11 = - diag(themux0s * (1 + apply(thedmux0s_M,1,sum) ) )
+    Delta22 = - diag(themu0ys * (1 + apply(thedmu0ys_M,2,sum) ) )
+    Delta12 = - t(themu0ys * t(thedmu0ys_M))
+    Delta21 = - t(themux0s * thedmux0s_M)
+    hess = rbind(cbind(Delta11,Delta12),cbind(Delta21,Delta22))
     return(hess)
   }
   #
-  xinit = -sigma* c(log(n/2),log(m/2))
+  xinit = - c(log(n/2),log(m/2))
   tm = proc.time()  
   sol = nleqslv(x = xinit,
                 fn = Z, jac = JZ,
                 method = "Broyden", # "Newton"
-                control = list(xtol=xtol,maxit = maxiter)
+                control = list(xtol=tol,maxit = maxiter)
   )
   time = proc.time()-tm  
   time = time["elapsed"] 
@@ -316,14 +310,14 @@ nodalNewton <- function(market, xFirst=TRUE, notifications=FALSE, sigma = 1E-6, 
     message(paste0("nodalNewton converged in ", iter," iterations and ", round(time,digits=2), " seconds.\n"))
   }
   #
-  theus = sol$x[1:tr$nbX]
-  thevs = sol$x[(tr$nbX+1):(tr$nbX+tr$nbY)]
-  themux0s = exp(- theus / sigma)
-  themu0ys = exp(- thevs / sigma)
-  themu = M(market$mmfs,themux0s,themu0ys)
+  theus = sol$x[1:nbX]
+  thevs = sol$x[(nbX+1):(nbX+nbY)]
+  themux0s = exp(- theus )
+  themu0ys = exp(- thevs )
+  themu = M(mmfs,themux0s,themu0ys)
   error = max(abs(c(themux0s + apply(themu,1,sum) - n,themu0ys + apply(themu,2,sum) - m ))) # calling this gives the right value to themu, themux0s and themu0ys
-  U = sigma * log(themu/themux0s)
-  V = sigma * t(log(t(themu) / themu0ys))
+  U =  log(themu/themux0s)
+  V =  t(log(t(themu) / themu0ys))
   #
   outcome = list(mu = themu,
                  mux0 = themux0s, mu0y = themu0ys,

@@ -240,7 +240,7 @@ dmux0s_M.minmmfs <- function (mmfs,mux0s,mu0ys)
   term_1 = mux0s * mmfs$A
   term_2 = t( mu0ys * t(mmfs$B ))
   #
-  return(ifelse(term1 <= term2,1,0) * mmfs$A)
+  return(ifelse(term_1 <= term_2,1,0) * mmfs$A)
 }
 #
 dmu0ys_M.minmmfs <- function (mmfs,mux0s,mu0ys)
@@ -248,14 +248,14 @@ dmu0ys_M.minmmfs <- function (mmfs,mux0s,mu0ys)
   term_1 = mux0s * mmfs$A
   term_2 = t( mu0ys * t(mmfs$B ))
   #
-  return(ifelse(term1 >= term2,1,0) * mmfs$B)  
+  return(ifelse(term_1 >= term_2,1,0) * mmfs$B)  
 }
 #
 dtheta_M.minmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
 {
   term_1 = mux0s * mmfs$A
   term_2 = t( mu0ys * t(mmfs$B ))
-  t1lessthant2 = ifelse(term1 <= term2,1,0)
+  t1lessthant2 = ifelse(term_1 <= term_2,1,0)
   der1 = mux0s * t1lessthant2
   der2 = t(mu0ys * t(1-t1lessthant2) )
   ret <- 0
