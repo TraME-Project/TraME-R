@@ -184,7 +184,17 @@ PsiToM.NTU <- function(tr,n,m,neededNorm)
   class(ret)="minmmfs"
   return(ret)
 }
-
+#
+Ucal.NTU <- function(tr, vs, xs=1:tr$nbX, ys=1:tr$nbY)
+{
+  stop("Ucal not defined for NTU models")
+}
+#
+Vcal.NTU <- function(tr, us, xs=1:tr$nbX, ys=1:tr$nbY)
+{
+  stop("Ucal not defined for NTU models")
+}
+#
 ################################################################################
 ########################        End of NTU transfers         ###################
 ################################################################################
