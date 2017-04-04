@@ -161,11 +161,11 @@ parIpfp <- function(market, xFirst=T, notifications=TRUE, debugmode=FALSE, tol=1
   # Computes equilibrium in the logit case via IPFP in the all-logit case
 {
   #
-  if (class(market) != "MFE") {stop("ipfp only applies to MFE markets.")}
+  if (class(market) != "MFE") {stop("parallel ipfp only applies to MFE markets.")}
   mmfs = market$mmfs
   noSingles = !is.null(mmfs$neededNorm)
   if(noSingles){
-    warning("There are known issues with the current implementation of the IPFP in the case without unassigned agents.")
+    warning("There are known issues with the current implementation of the parallel IPFP in the case without unassigned agents.")
     H = mmfs$neededNorm$H_edge_logit
     if(is.null(H)){
       stop("Function H_edge not included in market$neededNorm")
@@ -173,7 +173,7 @@ parIpfp <- function(market, xFirst=T, notifications=TRUE, debugmode=FALSE, tol=1
   }
   #
   if(notifications){
-    message('Solving for equilibrium in ITU_logit problem using IPFP.') 
+    message('Solving for equilibrium in ITU_logit problem using parallel IPFP.') 
   }
   
   n = mmfs$n
@@ -226,7 +226,7 @@ parIpfp <- function(market, xFirst=T, notifications=TRUE, debugmode=FALSE, tol=1
   time = time["elapsed"] 
   
   if(notifications){
-    message(paste0("IPFP converged in ", iter," iterations and ", round(time,digits=2), " seconds.\n"))
+    message(paste0("parallel IPFP converged in ", iter," iterations and ", round(time,digits=2), " seconds.\n"))
   }
   # Construct the equilibrium outcome based on ax and by obtained from above
   mu = M(mmfs,ax,by)  
