@@ -161,12 +161,7 @@ parIpfp <- function(market, xFirst=T, notifications=TRUE, debugmode=FALSE, tol=1
   # Computes equilibrium in the logit case via IPFP in the all-logit case
 {
   #
-  
-  market = m
-  bystart=market$m
-  
-  
-  if (!("mfe" %in% market$types)) {stop("ipfp only defined for market whose types contains mme.")}
+  if (class(market) != "MFE") {stop("ipfp only applies to MFE markets.")}
   mmfs = market$mmfs
   noSingles = !is.null(mmfs$neededNorm)
   if(noSingles){
@@ -180,6 +175,7 @@ parIpfp <- function(market, xFirst=T, notifications=TRUE, debugmode=FALSE, tol=1
   if(notifications){
     message('Solving for equilibrium in ITU_logit problem using IPFP.') 
   }
+  
   n = mmfs$n
   m = mmfs$m
   nbX = length(n)
