@@ -378,6 +378,7 @@ dtheta_M.codmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
 ################################################################################
 ########################            ces MMfs            ########################
 ################################################################################
+# corresponds to ETU transfers
 build_cesmmfs <- function(n,m,C,D,kappa,neededNorm)
 {
   ret = list(n=n,
@@ -387,7 +388,7 @@ build_cesmmfs <- function(n,m,C,D,kappa,neededNorm)
              neededNorm=neededNorm,
              C = C,
              D = D,
-             kappa = kappa
+             kappa = kappa # note that kappa is -1/tau in the ETU-logit interpretation
   )
   class(ret)="cesmmfs"
   return(ret)
@@ -426,7 +427,7 @@ dmux0s_M.cesmmfs <- function (mmfs,mux0s,mu0ys)
   mus = ((term_1 + term_2)/2)^(1/mmfs$kappa)
   #
   
-  return( mmfs$kappa * mmfs$C * (mus / mux0s)^(1 - mmfs$kappa) /2 )
+  return( mmfs$C * (mus / mux0s)^(1 - mmfs$kappa) /2 )
 }
 #
 dmu0ys_M.cesmmfs <- function (mmfs,mux0s,mu0ys)
@@ -437,7 +438,7 @@ dmu0ys_M.cesmmfs <- function (mmfs,mux0s,mu0ys)
   mus = ((term_1 + term_2)/2)^(1/mmfs$kappa)
   #
   
-  return( mmfs$kappa * mmfs$D * t( (t(mus) / mu0ys)^t(1 - mmfs$kappa) ) /2 )
+  return( mmfs$D * t( (t(mus) / mu0ys)^t(1 - mmfs$kappa) ) /2 )
 }
 #
 
