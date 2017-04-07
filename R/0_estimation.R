@@ -279,6 +279,7 @@ mle <- function(model, muhat, theta0=NULL, xtol_rel=1e-8, maxeval=1e5, print_lev
   lb     = initparam(model)$lb
   ub     = initparam(model)$ub
   #
+  tm = proc.time()
   res = nloptr(x0=theta0, 
                eval_f=mLogLikelihood,
                lb=lb, ub=ub,
@@ -292,12 +293,14 @@ mle <- function(model, muhat, theta0=NULL, xtol_rel=1e-8, maxeval=1e5, print_lev
                muhat0y=muhat0y,
                scale = scale,
                byIndiv=byIndiv)
+  time = proc.time() - tm
+  time = time["elapsed"]
   #
   if(print_level > 0){
     print(res, show.controls=((1+nbX*nbY):(nbParams+nbX*nbY)))
   }
   #
-  return(list(thetahat=res$solution))
+  return(list(thetahat=res$solution, fval = res$objective, time=time))
 }
 
 
