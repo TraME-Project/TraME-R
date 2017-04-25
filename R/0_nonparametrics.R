@@ -151,7 +151,7 @@ npe <- function(model, muhat, print_level=0)
         print(paste0("Moment Matching Estimation of ",class(model)," model."))
     }
     #
-    market = parametricMarket(model,initparam(model)$param)
+    market = parametricMarket(model,inittheta(model)$theta)
     #
     if(class(market$transfers)!="TU"){
         stop("Nonparametric estimation currently only applies to TU models.")

@@ -139,12 +139,12 @@ D2Gstar.logit <- function(arums, mu, n, xFirst=TRUE)
     return(arums$sigma*H)
 }
 
-dtheta_NablaGstar.logit <- function(arums, mu, n, dtheta=diag(1), xFirst=TRUE)
+dparams_NablaGstar.logit <- function(arums, mu, n, deltaparams=diag(1), xFirst=TRUE)
 {
     mux0 <- logmu <- ret <- 0
     #
     if(arums$outsideOption){
-        if(length(dtheta)==0){
+        if(length(deltaparams)==0){
             return(matrix(0,nrow=arums$nbX*arums$nbY,ncol=0))
         }
         #
@@ -156,9 +156,9 @@ dtheta_NablaGstar.logit <- function(arums, mu, n, dtheta=diag(1), xFirst=TRUE)
             logmuovermux0 = c(t(log(mu/mux0)))
         }
         #
-        ret = matrix(c(dtheta)*logmuovermux0,ncol=1)
+        ret = matrix(c(deltaparams)*logmuovermux0,ncol=1)
     }else{
-        if(length(dtheta)==0){
+        if(length(deltaparams)==0){
             return(matrix(0,nrow=arums$nbX*arums$nbY,ncol=0))
         }
         #
@@ -168,7 +168,7 @@ dtheta_NablaGstar.logit <- function(arums, mu, n, dtheta=diag(1), xFirst=TRUE)
             logmu = c(t(log(mu)))
         }
         #
-        ret = matrix(c(dtheta)*logmu,ncol=1)
+        ret = matrix(c(deltaparams)*logmu,ncol=1)
     }
     #
     return(ret)

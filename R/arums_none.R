@@ -45,7 +45,7 @@ Gstar.none <- function(arums, mu)
     stop("Gstar not yet defined for no arums case.")
 }
 
-dtheta_NablaGstar.none <- function(arums, mu, n, dtheta=NULL, xFirst=TRUE)
+dparams_NablaGstar.none <- function(arums, mu, n, deltaparamsG=NULL, xFirst=TRUE)
 {
     return(rep(0,arums$nbX*arums$nbY))
 }

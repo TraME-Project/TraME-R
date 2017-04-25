@@ -19,7 +19,7 @@
 ##
 ################################################################################
 
-dtheta_mu_default <- function(model, market, theta, dtheta=diag(length(theta)))
+dtheta_mu_default <- function(model, market, theta, deltatheta=diag(length(theta)))
 {
   outcome = solveEquilibrium(market,notifications=FALSE)
   #
@@ -30,10 +30,10 @@ dtheta_mu_default <- function(model, market, theta, dtheta=diag(length(theta)))
   U = outcome$U
   V = outcome$V
   
-  dthetaPsiGH = dparam(model, dtheta)
-  dthetaPsi = dthetaPsiGH$dparamsPsi
-  dthetaG = dthetaPsiGH$dparamsG
-  dthetaH = dthetaPsiGH$dparamsH
+
+  deltaparamsPsi = dtheta_Psi(model, deltatheta)
+  deltaparamsG = dtheta_G(model, deltatheta)
+  deltaparamsH = dtheta_H(model, deltatheta)
   
   tr = market$transfers
   arumsG = market$arumsG
@@ -52,9 +52,9 @@ dtheta_mu_default <- function(model, market, theta, dtheta=diag(length(theta)))
   #
   denom = duPsivec * HessGstar + dvPsivec * HessHstar
   
-  num1 = dtheta_Psi(tr,U,V,dthetaPsi)
-  num2 = duPsivec * dtheta_NablaGstar(arumsG,mu,market$n,dthetaG,xFirst=TRUE)
-  num3 = dvPsivec * dtheta_NablaGstar(arumsH,t(mu),market$m,dthetaH,xFirst=FALSE)
+  num1 = dparams_Psi(tr,U,V,deltaparamsPsi)
+  num2 = duPsivec * dparams_NablaGstar(arumsG,mu,market$n,deltaparamsG,xFirst=TRUE)
+  num3 = dvPsivec * dparams_NablaGstar(arumsH,t(mu),market$m,deltaparamsH,xFirst=FALSE)
   if (length(num1) == 0) (num1 = 0)
   if (length(num2) == 0) (num2 = 0)
   if (length(num3) == 0) (num3 = 0)
@@ -65,12 +65,13 @@ dtheta_mu_default <- function(model, market, theta, dtheta=diag(length(theta)))
   return(list(mu= c(mu),mux0s=mux0s, mu0ys=mu0ys,dmu=dmu))
 }
 #
-dtheta_mu_mfe <- function(model, market, theta, dtheta=diag(length(theta)))
+dtheta_mu_mfe <- function(model, market, theta, deltatheta=diag(length(theta)))
 {
   nbX = length(market$n)
   nbY = length(market$m)
-  rangeParams = dim(dtheta)[2]
-  dthetaM = dparam(model, dtheta)
+  deltatheta = matrix(deltatheta , nrow = length(theta))
+  rangeTheta = dim(deltatheta)[2]
+  deltaparamsM = dtheta_M(model, deltatheta)
   if (class( market) == "DSE")
   { mmfs = PsiToM(market$transfers, market$n,market$m,market$neededNorm ) }
   else
@@ -87,12 +88,12 @@ dtheta_mu_mfe <- function(model, market, theta, dtheta=diag(length(theta)))
   du_Ms = matrix(dmux0s_M(mmfs,mux0s,mu0ys),nrow=nbX)
   dv_Ms = matrix(dmu0ys_M(mmfs,mux0s,mu0ys),nrow=nbX)
   # 
-  dtheta_Ms = matrix(dtheta_M(mmfs,mux0s,mu0ys,dthetaM),nrow=tr$nbX*tr$nbY)
+  deltaMs = matrix(dparams_M(mmfs,mux0s,mu0ys,deltaparamsM),nrow=tr$nbX*tr$nbY)
 
-  dtheta_Ms_array = array(dtheta_Ms ,dim=c(tr$nbX,tr$nbY,rangeParams))
+  deltaMs_array = array(deltaMs ,dim=c(tr$nbX,tr$nbY,rangeTheta))
   
-  d_1 = apply(dtheta_Ms_array, c(1,3), sum) / sigma
-  d_2 = apply(dtheta_Ms_array, c(2,3), sum) / sigma
+  d_1 = apply(deltaMs_array, c(1,3), sum) / sigma
+  d_2 = apply(deltaMs_array, c(2,3), sum) / sigma
   num =  - rbind(d_1,d_2)
   
   Delta11 = diag(1 + apply(du_Ms,1,sum),nrow=tr$nbX)
@@ -104,8 +105,8 @@ dtheta_mu_mfe <- function(model, market, theta, dtheta=diag(length(theta)))
   dmusingles = solve(Delta,num)
   dmux0 = dmusingles[1:nbX,,drop=FALSE]
   dmu0y = dmusingles[(nbX+1):(nbX+nbY),,drop=FALSE]
-  dmux0full = array(0,dim=c(nbX,tr$nbY,rangeParams))
-  dmu0yfull = array(0,dim=c(nbX,tr$nbY,rangeParams))
+  dmux0full = array(0,dim=c(nbX,tr$nbY,rangeTheta))
+  dmu0yfull = array(0,dim=c(nbX,tr$nbY,rangeTheta))
 
   for(y in 1:nbY){
     dmux0full[,y,] = dmux0
@@ -114,22 +115,21 @@ dtheta_mu_mfe <- function(model, market, theta, dtheta=diag(length(theta)))
     dmu0yfull[x,,] = dmu0y
   }
   
-  dmu = c(du_Ms)*matrix(dmux0full, ncol=rangeParams) + 
-    c(dv_Ms)*matrix(dmu0yfull, ncol=rangeParams) +
-    dtheta_Ms     
+  dmu = c(du_Ms)*matrix(dmux0full, ncol=rangeTheta) + 
+    c(dv_Ms)*matrix(dmu0yfull, ncol=rangeTheta) +
+    deltaMs     
 
     return(list(mu = c(mu), mux0s = mux0s, mu0ys = mu0ys, dmu = dmu))
   
 }
 
-dtheta_mu_logit <- function(model, market, theta, dtheta=diag(length(theta)))
+dtheta_mu_logit <- function(model, market, theta, deltatheta=diag(length(theta)))
 {
-  rangeParams = dim(dtheta)[2]
+  deltatheta = matrix(deltatheta , nrow = length(theta))
+  rangeTheta = dim(deltatheta)[2]
   sigma = market$arumsG$sigma
 
-  dthetaPsiGH = dparam(model, dtheta)
-  dthetaPsi = dthetaPsiGH$dparamsPsi
-
+  deltaparamsPsi = dtheta_Psi(model, deltatheta)
   tr = market$transfers
   #
   outcome = solveEquilibrium(market,notifications=FALSE,debugmode=FALSE)
@@ -144,11 +144,11 @@ dtheta_mu_logit <- function(model, market, theta, dtheta=diag(length(theta)))
   du_psis = du_Psi(tr,us,vs)
   dv_psis = 1 - du_psis
   #
-  dtheta_psis = matrix(dtheta_Psi(tr,us,vs,dthetaPsi),nrow=tr$nbX*tr$nbY)
-  mudthetapsi = array(c(mu)*c(dtheta_psis),dim=c(tr$nbX,tr$nbY,rangeParams))
+  deltaPsis = matrix(dparams_Psi(tr,us,vs,deltaparamsPsi),nrow=tr$nbX*tr$nbY)
+  mudeltaPsi = array(c(mu)*c(deltaPsis),dim=c(tr$nbX,tr$nbY,rangeTheta))
 
-  d_1 = apply(mudthetapsi, c(1,3), sum) / sigma
-  d_2 = apply(mudthetapsi, c(2,3), sum) / sigma
+  d_1 = apply(mudeltaPsi, c(1,3), sum) / sigma
+  d_2 = apply(mudeltaPsi, c(2,3), sum) / sigma
   num = rbind(d_1,d_2)
   #
   Delta11 = diag(mux0s + apply(mu*du_psis,1,sum),nrow=tr$nbX)
@@ -160,8 +160,8 @@ dtheta_mu_logit <- function(model, market, theta, dtheta=diag(length(theta)))
   dlogmusingles = solve(Delta,num)
   dlogmux0 = dlogmusingles[1:tr$nbX,,drop=FALSE]
   dlogmu0y = dlogmusingles[(tr$nbX+1):(tr$nbX+tr$nbY),,drop=FALSE]
-  dlogmux0full = array(0,dim=c(tr$nbX,tr$nbY,rangeParams))
-  dlogmu0yfull = array(0,dim=c(tr$nbX,tr$nbY,rangeParams))
+  dlogmux0full = array(0,dim=c(tr$nbX,tr$nbY,rangeTheta))
+  dlogmu0yfull = array(0,dim=c(tr$nbX,tr$nbY,rangeTheta))
   #
   for(y in 1:tr$nbY){
     dlogmux0full[,y,] = dlogmux0
@@ -170,18 +170,18 @@ dtheta_mu_logit <- function(model, market, theta, dtheta=diag(length(theta)))
     dlogmu0yfull[x,,] = dlogmu0y
   }
   #
-  dlogmu = c(du_psis)*matrix(dlogmux0full, ncol=rangeParams) +
-    c(dv_psis)*matrix(dlogmu0yfull, ncol=rangeParams) -
-    matrix(dtheta_psis,ncol=rangeParams) / sigma
+  dlogmu = c(du_psis)*matrix(dlogmux0full, ncol=rangeTheta) +
+    c(dv_psis)*matrix(dlogmu0yfull, ncol=rangeTheta) -
+    matrix(deltaPsis,ncol=rangeTheta) / sigma
   dmu    = c(mu) * dlogmu
   #
   return(list(mu = c(mu), mux0s = mux0s, mu0ys = mu0ys, dmu = dmu))
 }
 
-dtheta_mu_numeric <- function (model, market, theta, dtheta=diag(length(theta)))
+dtheta_mu_numeric <- function (model, market, theta, deltatheta=diag(length(theta)))
 { 
-  thef <- function(theparams){
-    ret = solveEquilibrium(parametricMarket(model,theparams),notifications=FALSE)$mu
+  thef <- function(thetheta){
+    ret = solveEquilibrium(parametricMarket(model,thetheta),notifications=FALSE)$mu
     return(ret)
   }
   #
@@ -191,27 +191,27 @@ dtheta_mu_numeric <- function (model, market, theta, dtheta=diag(length(theta)))
   mux0s = outcome$mux0
   mu0ys = outcome$mu0y
   #
-  dmu = jacobian(thef,theta) %*% dtheta
+  dmu = jacobian(thef,theta) %*% deltatheta
   #
   return(list(mu = c(mu), mux0s = mux0s, mu0ys = mu0ys, dmu = dmu))
 }
 
-dtheta_mu <- function(model, theta, dtheta=diag(length(theta)))
+dtheta_mu <- function(model, theta, deltatheta=diag(length(theta)))
 {
   market = parametricMarket(model,theta)
   #
   ret <- 0
   if (class(market)=="MFE")
-  {  ret = dtheta_mu_mfe(model,market,theta,dtheta)}
+  {  ret = dtheta_mu_mfe(model,market,theta,deltatheta)}
   else
   {
     check_1 = (class(market$arumsG)=="logit")
     check_2 = (class(market$arumsH)=="logit")
     check_3 = (market$arumsG$sigma == market$arumsH$sigma)
     if(check_1 && check_2 && check_3){
-      ret = dtheta_mu_logit(model,market,theta,dtheta)
+      ret = dtheta_mu_logit(model,market,theta,deltatheta)
     }else{
-      ret = dtheta_mu_default(model,market,theta,dtheta)
+      ret = dtheta_mu_default(model,market,theta,deltatheta)
     }
   }
   #
@@ -253,7 +253,7 @@ mLogLikelihood.default <- function(theta, model, muhat, muhatx0, muhat0y, scale=
     #
     ret = list(objective = mLL / scale, gradient = mGradLL / scale)
   }else{
-    ret = list(objective=NaN, gradient=rep(NaN,model$nbParams))
+    ret = list(objective=NaN, gradient=rep(NaN,model$dimTheta))
   }
   #
   return(ret)
@@ -264,7 +264,7 @@ mle <- function(model, muhat, theta0=NULL, xtol_rel=1e-8, maxeval=1e5, print_lev
   nbX = length(model$n)
   nbY = length(model$m)
   scale = max(sum(model$n),sum(model$n))
-  nbParams = length(model$nbParams)
+  dimTheta = length(model$dimTheta)
   if(print_level > 0){
     message(paste0("Maximum Likelihood Estimation of ",class(model)," model."))
   }
@@ -273,11 +273,11 @@ mle <- function(model, muhat, theta0=NULL, xtol_rel=1e-8, maxeval=1e5, print_lev
   muhat0y  = model$m-apply(muhat,2,sum)
   #
   if(is.null(theta0)){
-    theta0 = initparam(model)$param
+    theta0 = inittheta(model)$theta
   }
   #
-  lb     = initparam(model)$lb
-  ub     = initparam(model)$ub
+  lb     = inittheta(model)$lb
+  ub     = inittheta(model)$ub
   #
   tm = proc.time()
   res = nloptr(x0=theta0, 
@@ -297,7 +297,7 @@ mle <- function(model, muhat, theta0=NULL, xtol_rel=1e-8, maxeval=1e5, print_lev
   time = time["elapsed"]
   #
   if(print_level > 0){
-    print(res, show.controls=((1+nbX*nbY):(nbParams+nbX*nbY)))
+    print(res, show.controls=((1+nbX*nbY):(dimTheta+nbX*nbY)))
   }
   #
   return(list(thetahat=res$solution, fval = res$objective, time=time))
@@ -318,7 +318,7 @@ plotCovariogram2D = function(model,lambda,muhat = NULL, dim1=1,dim2=2,nbSteps =1
     lambdastar[dim2]=lambda[dim1]*sin(angle) + lambda[dim2]*cos(angle) 
     market = parametricMarket(model,lambdastar)
     mustar = solveEquilibrium(market)$mu
-    points[i,] =  c(c(mustar) %*% matrix(phi_xyk, ncol=model$nbParams) ) [c(dim1,dim2)]
+    points[i,] =  c(c(mustar) %*% matrix(phi_xyk, ncol=model$dimTheta) ) [c(dim1,dim2)]
     
   }
   par(mar = rep(2, 4))
@@ -327,7 +327,7 @@ plotCovariogram2D = function(model,lambda,muhat = NULL, dim1=1,dim2=2,nbSteps =1
   
   if (! is.null(muhat))
   {
-    Chat = c(c(muhat) %*% matrix(phi_xyk, ncol=model$nbParams) ) [c(dim1,dim2)]
+    Chat = c(c(muhat) %*% matrix(phi_xyk, ncol=model$dimTheta) ) [c(dim1,dim2)]
     points(matrix(Chat,1,2),pch=16,col=rgb(1,0,0))
   }
 }

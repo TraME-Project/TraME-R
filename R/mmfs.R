@@ -149,13 +149,13 @@ dmu0ys_M.geommfs <- function (mmfs,mux0s,mu0ys)
   return(ret)
 }
 #
-dtheta_M.geommfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
+dparams_M.geommfs <- function (mmfs,mux0s,mu0ys,deltaparamsM=NULL)
 {
   ret <- 0
-  if(is.null(dtheta)){
+  if(is.null(deltaparamsM)){
     ret = Diagonal(sqrt(mux0s %*% t(mu0ys)),n=mmfs$nbX*mmfs$nbY)
   }else{
-    ret = c(matrix(dtheta,nrow = nbX) * sqrt(mux0s %*% t(mu0ys)) )
+    ret = c(matrix(deltaparamsM,nrow = nbX) * sqrt(mux0s %*% t(mu0ys)) )
   }
   return(ret)
 }
@@ -251,7 +251,7 @@ dmu0ys_M.minmmfs <- function (mmfs,mux0s,mu0ys)
   return(ifelse(term_1 >= term_2,1,0) * mmfs$B)  
 }
 #
-dtheta_M.minmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
+dparams_M.minmmfs <- function (mmfs,mux0s,mu0ys,deltaparamsM=NULL)
 {
   term_1 = mux0s * mmfs$A
   term_2 = t( mu0ys * t(mmfs$B ))
@@ -259,13 +259,13 @@ dtheta_M.minmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
   der1 = mux0s * t1lessthant2
   der2 = t(mu0ys * t(1-t1lessthant2) )
   ret <- 0
-  if(is.null(dtheta)){
+  if(is.null(deltaparamsM)){
     ret = cbind(Diagonal(x=der1),
                 Diagonal(x=der2 ))
   }else{
-    dtheta1 = matrix(dtheta[1:(mmfs$nbX*mmfs$nbY)],nrow = nbX)
-    dtheta2 = matrix(dtheta[(1+mmfs$nbX*mmfs$nbY):(2*mmfs$nbX*mmfs$nbY)],nrow = nbX)
-    ret = c(dtheta1 * der1 + dtheta2 * der2 )
+    deltaparams1 = matrix(deltaparamsM[1:(mmfs$nbX*mmfs$nbY)],nrow = nbX)
+    deltaparams2 = matrix(deltaparamsM[(1+mmfs$nbX*mmfs$nbY):(2*mmfs$nbX*mmfs$nbY)],nrow = nbX)
+    ret = c(deltaparams1 * der1 + deltaparams2 * der2 )
   }
   return(ret)
 }
@@ -353,7 +353,7 @@ dmu0ys_M.codmmfs <- function (mmfs,mux0s,mu0ys)
   return(ret)
 }
 #
-dtheta_M.codmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
+dparams_M.codmmfs <- function (mmfs,mux0s,mu0ys,deltaparamsM=NULL)
 {
   term_1 = mux0s^(mmfs$lambda)
   term_2 = t( mu0ys^t(mmfs$aux_zeta) )
@@ -363,13 +363,13 @@ dtheta_M.codmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
   der2 = term_1 * term_2
   
   ret <- 0
-  if(is.null(dtheta)){
+  if(is.null(deltaparamsM)){
     ret = cbind (Diagonal(x = der1),
                  Diagonal(x = der2))
   }else{
-    dtheta1 = matrix(dtheta[1:(mmfs$nbX*mmfs$nbY)],nrow = nbX)
-    dtheta2 = matrix(dtheta[(1+mmfs$nbX*mmfs$nbY):(2*mmfs$nbX*mmfs$nbY)],nrow = nbX)
-    ret = c(dtheta1 * der1 + dtheta2 * der2)}
+    deltaparams1 = matrix(deltaparamsM[1:(mmfs$nbX*mmfs$nbY)],nrow = nbX)
+    deltaparams2 = matrix(deltaparamsM[(1+mmfs$nbX*mmfs$nbY):(2*mmfs$nbX*mmfs$nbY)],nrow = nbX)
+    ret = c(deltaparams1 * der1 + deltaparams2 * der2)}
     
     return(ret)
 }
@@ -442,7 +442,7 @@ dmu0ys_M.cesmmfs <- function (mmfs,mux0s,mu0ys)
 }
 #
 
-dtheta_M.cesmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
+dparams_M.cesmmfs <- function (mmfs,mux0s,mu0ys,deltaparamsM=NULL)
 {
   term_1 = mmfs$C * (mux0s^mmfs$kappa)
   term_2 = mmfs$D * t(mu0ys^t(mmfs$kappa))
@@ -457,16 +457,16 @@ dtheta_M.cesmmfs <- function (mmfs,mux0s,mu0ys,dtheta=NULL)
   der3 = num / denom
   
   ret <- 0
-  if(is.null(dtheta)){
+  if(is.null(deltaparamsM)){
     ret = cbind (Diagonal(x = der1),
                  Diagonal(x = der2),
                  Diagonal(x = der3 ))
   }else{
-    dtheta1 = matrix(dtheta[1:(mmfs$nbX*mmfs$nbY)],nrow = nbX)
-    dtheta2 = matrix(dtheta[(1+mmfs$nbX*mmfs$nbY):(2*mmfs$nbX*mmfs$nbY)],nrow = nbX)
-    dtheta3 = matrix(dtheta[(1+2*mmfs$nbX*mmfs$nbY):(3*mmfs$nbX*mmfs$nbY)],nrow = nbX)
+    deltaparams1 = matrix(deltaparamsM[1:(mmfs$nbX*mmfs$nbY)],nrow = nbX)
+    deltaparams2 = matrix(deltaparamsM[(1+mmfs$nbX*mmfs$nbY):(2*mmfs$nbX*mmfs$nbY)],nrow = nbX)
+    deltaparams3 = matrix(deltaparamsM[(1+2*mmfs$nbX*mmfs$nbY):(3*mmfs$nbX*mmfs$nbY)],nrow = nbX)
     
-    ret = c(dtheta1 * der1 + dtheta2 * der2 + dtheta3 * der3 )
+    ret = c(deltaparams1 * der1 + deltaparams2 * der2 + deltaparams3 * der3 )
   }
   
   return(ret)

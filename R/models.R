@@ -22,9 +22,9 @@
 ################################################################################
 ########################       default methods           #######################
 ################################################################################
-initparam.default <- function(model)
+inittheta.default <- function(model)
 {
-  ret = list(param=rep(0,model$nbParams),
+  ret = list(theta=rep(0,model$dimTheta),
              lb = NULL, ub = NULL)
 }
 estimate.default = mle
@@ -53,7 +53,7 @@ buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1 )
   neededNorm = defaultNorm(TRUE)
   #
   ret = list(types = c("itu-rum", "mfe"),
-             nbParams=dX*dY,
+             dimTheta=dX*dY,
              dX=dX, dY=dY,
              nbX = nbX, nbY = nbY,
              n=n, m=m,
@@ -63,9 +63,9 @@ buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1 )
              Phi_xyk = function(model) 
                (model$phi_xyk_aux),
              Phi_xy = function(model ,lambda) 
-               ( array(model$phi_xyk_aux,dim=c(model$nbX*model$nbY,model$nbParams)) %*% lambda ),
+               ( array(model$phi_xyk_aux,dim=c(model$nbX*model$nbY,model$dimTheta)) %*% lambda ),
              Phi_k = function(model, muhat) 
-               (c(c(muhat) %*% array(model$phi_xyk_aux,dim=c(model$nbX*model$nbY,model$nbParams))))
+               (c(c(muhat) %*% array(model$phi_xyk_aux,dim=c(model$nbX*model$nbY,model$dimTheta))))
                )
   class(ret) = "affinity"
   #
@@ -77,11 +77,14 @@ parametricMarket.affinity <- function(model, theta)
                          matrix(model$Phi_xy(model,c(theta)), nrow=model$nbX),
                          sigma=model$sigma,neededNorm=model$neededNorm))
 
-dparam.affinity <- function(model, dparams=diag(model$nbParams))
-  (list(dparamsPsi = model$Phi_xy(model, dparams),
-        dparamsG   =  matrix(0,nrow=0,ncol=dim(dparams)[2]),
-        dparamsH   = matrix(0,nrow=0,ncol=dim(dparams)[2]))
-  )
+dtheta_Psi.affinity <- function(model, deltaparams=diag(model$dimTheta))
+  (return(model$Phi_xy(model, deltaparams)))
+
+dtheta_G.affinity <- function(model, deltaparams=diag(model$dimTheta))
+  (return(matrix(0,nrow=0,ncol=dim(deltaparams)[2])))
+
+dtheta_H.affinity <- function(model, deltaparams=diag(model$dimTheta))
+  (return(matrix(0,nrow=0,ncol=dim(deltaparams)[2])))
 #
 #
 mmeaffinityNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
@@ -92,14 +95,14 @@ mmeaffinityNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp
     message(paste0("Moment Matching Estimation of Affinity model via IPFP+BFGS optimization."))
   }
   #
-  theta0 = initparam(model)$param
+  theta0 = inittheta(model)$theta
   #market = parametricMarket(model,theta0)
   Chat = model$Phi_k(model, muhat)
   nbX = model$nbX
   nbY = model$nbY
   dX = model$dX
   dY = model$dY
-  nbParams = model$nbParams
+  dimTheta = model$dimTheta
   sigma = model$sigma
   #
   totmass = sum(model$n)
@@ -170,13 +173,13 @@ mmeaffinityWithRegul <- function(model, muhat, lambda, xtol_rel=1e-4, maxeval=1e
     message(paste0("Moment Matching Estimation of Affinity model with regularization via proximal gradient."))
   }
   #
-  theta0 = initparam(model)$param
+  theta0 = inittheta(model)$theta
   Chat = model$Phi_k(model, muhat)
   nbX = model$nbX
   nbY = model$nbY
   dX = model$dX
   dY = model$dY
-  nbParams = model$nbParams
+  dimTheta = model$dimTheta
   sigma = model$sigma
   #
   totmass = sum(model$n)
@@ -283,7 +286,7 @@ buildModel_TU_logit <- function(phi_xyk, n=NULL, m=NULL,noSingles=FALSE)
   dims = dim(phi_xyk)
   nbX = dims[1]
   nbY = dims[2]
-  nbParams = dims[3]
+  dimTheta = dims[3]
   #
   if(is.null(n)){
     n = rep(1,nbX)
@@ -296,7 +299,7 @@ buildModel_TU_logit <- function(phi_xyk, n=NULL, m=NULL,noSingles=FALSE)
   #
   ret = list(types = c("itu-rum", "mfe"),
              phi_xyk = phi_xyk,
-             nbParams = nbParams,
+             dimTheta = dimTheta,
              nbX = nbX, nbY = nbY,
              n=n, m=m,
              neededNorm = neededNorm)
@@ -308,22 +311,27 @@ buildModel_TU_logit <- function(phi_xyk, n=NULL, m=NULL,noSingles=FALSE)
 parametricMarket.TU_logit<- function(model, theta)
   # theta is the parameter vector for phi
 {
-  phi_xy_vec = matrix(model$phi_xyk,ncol = model$nbParams) %*% theta
+  phi_xy_vec = matrix(model$phi_xyk,ncol = model$dimTheta) %*% theta
   phi_xy_mat = matrix(phi_xy_vec,model$nbX,model$nbY)
   return( build_market_TU_logit(model$n,model$m,phi_xy_mat,
                                 neededNorm=model$neededNorm) )
 }
 
-dparam.TU_logit <- function(model, dparams=diag(model$nbParams))
+dtheta_Psi.TU_logit <- function(model, deltaparams=diag(model$dimTheta))
 {
-  dparamsPsi = matrix(model$phi_xyk,ncol = model$nbParams) %*% dparams
-  dparamsG = matrix(0,nrow=0,ncol=dim(dparams)[2])
-  dparamsH = matrix(0,nrow=0,ncol=dim(dparams)[2])
-  return( list(dparamsPsi=dparamsPsi,
-               dparamsG = dparamsG,
-               dparamsH = dparamsH))
+  return( matrix(model$phi_xyk,ncol = model$dimTheta) %*% deltaparams )
 }
 #
+dtheta_G.TU_logit <- function(model, deltaparams=diag(model$dimTheta))
+{
+  return( matrix(0,nrow=0,ncol=dim(deltaparams)[2]) )
+}
+#
+dtheta_H.TU_logit <- function(model, deltaparams=diag(model$dimTheta))
+{
+  return( matrix(0,nrow=0,ncol=dim(deltaparams)[2]) )
+}
+
 mme.TU_logit <-  function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
   # mme.affinity should be improved as one should make use of the logit structure and use the ipfp
 {
@@ -331,11 +339,10 @@ mme.TU_logit <-  function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=
     message(paste0("Moment Matching Estimation of TU_rum model via optimization."))
   }
   
-  theta0 = initparam(model)$param
-  dtheta = dparam(model)
+  theta0 = inittheta(model)$theta
   market = parametricMarket(model,theta0)
   
-  kron = dtheta$dparamsPsi
+  kron = dtheta_Psi(model)
   Chat = c(c(muhat) %*% kron)
   #
   if (print_level>0){
@@ -345,11 +352,11 @@ mme.TU_logit <-  function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=
   nbX = length(model$n)
   nbY = length(model$m)
   
-  nbParams = dim(kron)[2]
+  dimTheta = dim(kron)[2]
   #
   eval_f <- function(thearg){
     theU = matrix(thearg[1:(nbX*nbY)],nbX,nbY)
-    thetheta = thearg[(1+nbX*nbY):(nbParams+nbX*nbY)]
+    thetheta = thearg[(1+nbX*nbY):(dimTheta+nbX*nbY)]
     
     phi = kron %*% thetheta
     phimat = matrix(phi,nbX,nbY)
@@ -378,10 +385,10 @@ mme.TU_logit <-  function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=
                            "maxeval"=maxeval,
                            "print_level"=print_level))
   #
-  #if(print_level>0){print(resopt, show.controls=((1+nbX*nbY):(nbParams+nbX*nbY)))}
+  #if(print_level>0){print(resopt, show.controls=((1+nbX*nbY):(dimTheta+nbX*nbY)))}
   #
   U = matrix(resopt$solution[1:(nbX*nbY)],nbX,nbY)  
-  thetahat = resopt$solution[(1+nbX*nbY):(nbParams+nbX*nbY)]
+  thetahat = resopt$solution[(1+nbX*nbY):(dimTheta+nbX*nbY)]
   V = matrix(kron %*% thetahat,nbX,nbY) - U
   #
   if (resopt$status<0) {warning("nloptr convergence failed.")}
@@ -421,7 +428,7 @@ buildModel_ETU_logit <- function(Xvals, Yvals, n=NULL, m=NULL)
   #
   ret = list(types = c("itu-rum", "mfe"),
              diff=diff,
-             nbParams=2*dim(t(t(diff)))[2]+1,
+             dimTheta=2*dim(t(t(diff)))[2]+1,
              nbX=nbX, nbY=nbY,
              dX=dX, dY=dY,
              n=n, m=m)
@@ -447,29 +454,34 @@ parametricMarket.ETU_logit <- function(model, theta)
   return(ret)
 }
 
-dparam.ETU_logit <- function(model, dparams=diag(model$nbParams))
+dtheta_Psi.ETU_logit <- function(model, deltaparams=diag(model$dimTheta))
   # params is simply the affinity matrix
 {
   zero1 = matrix(0,model$nbX*model$nbY,model$dX)
   zero2 = matrix(0,model$nbX*model$nbY,model$dY)
   zero3 = matrix(0,model$nbX*model$nbY,1)
   #
-  dparamsPsi = rbind(cbind(model$diff,zero2,zero3),
+  return( rbind(cbind(model$diff,zero2,zero3),
                      cbind(zero1,model$diff,zero3),
                      cbind(zero1,zero2,rep(1,model$nbX*model$nbY)))
-  dparamsG = matrix(0,nrow=1,ncol=dim(dparams)[2])
-  dparamsH = matrix(0,nrow=1,ncol=dim(dparams)[2])
-  #
-  ret = list(dparamsPsi = dparamsPsi,
-             dparamsG   = dparamsG,
-             dparamsH   = dparamsH)
-  #
-  return(ret)
+  )
+}
+#
+dtheta_G.ETU_logit <- function(model, deltaparams=diag(model$dimTheta))
+  # params is simply the affinity matrix
+{
+  return( matrix(0,nrow=1,ncol=dim(deltaparams)[2])) 
+}
+#
+dtheta_H.ETU_logit <- function(model, deltaparams=diag(model$dimTheta))
+  # params is simply the affinity matrix
+{
+  return( matrix(0,nrow=1,ncol=dim(deltaparams)[2])) 
 }
 
-initparam.ETU_logit <- function(model)
+inittheta.ETU_logit <- function(model)
 {
-  ret = list(param=c(rep(0,model$nbParams-1),1),
+  ret = list(theta=c(rep(0,model$dimTheta-1),1),
              lb=NULL,ub=NULL)
   #
   return(ret)
@@ -495,9 +507,9 @@ buildModel_TU_empirical = function(phi_xyk, n=NULL, m=NULL, arumsG, arumsH) {
     m = rep(1,nbY)
   }
   #
-  nbParams = dims[3]
+  dimTheta = dims[3]
   ret = list(  phi_xyk = phi_xyk,
-               nbParams = nbParams,                         
+               dimTheta = dimTheta,                         
                nbX=nbX,
                nbY=nbY,
                n = n,
@@ -512,19 +524,24 @@ buildModel_TU_empirical = function(phi_xyk, n=NULL, m=NULL, arumsG, arumsH) {
 #
 parametricMarket.TU_empirical <- function(model, theta)
 {
-  phi_xy_vec = matrix(model$phi_xyk,ncol = model$nbParams) %*% theta
+  phi_xy_vec = matrix(model$phi_xyk,ncol = model$dimTheta) %*% theta
   phi_xy_mat = matrix(phi_xy_vec,model$nbX,model$nbY)
 return(  build_market_TU_general(model$n,model$m,phi_xy_mat,model$arumsG,model$arumsH))
 }
 #
-dparam.TU_empirical  <- function(model,dparams=diag(model$nbParams))
+dtheta_Psi.TU_empirical  <- function(model,deltaparams=diag(model$dimTheta))
 {
-  dparamsPsi = matrix(model$phi_xyk,ncol = model$nbParams) %*% dparams
-  dparamsG = matrix(0,nrow=0,ncol=dim(dparams)[2])
-  dparamsH = matrix(0,nrow=0,ncol=dim(dparams)[2])
-  return( list(dparamsPsi=dparamsPsi,
-               dparamsG = dparamsG,
-               dparamsH = dparamsH))
+  return(matrix(model$phi_xyk,ncol = model$dimTheta) %*% deltaparams) 
+}
+#
+dtheta_G.TU_empirical  <- function(model,deltaparams=diag(model$dimTheta))
+{
+  return(matrix(0,nrow=0,ncol=dim(deltaparams)[2]) )
+}
+#
+dtheta_H.TU_empirical  <- function(model,deltaparams=diag(model$dimTheta))
+{
+  return(matrix(0,nrow=0,ncol=dim(deltaparams)[2]) )
 }
 #
 mme.TU_empirical <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
@@ -532,7 +549,7 @@ mme.TU_empirical <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_lev
   if (print_level>0){
     message(paste0("Moment Matching Estimation of TU_empirical model via LP optimization."))
   }
-  kron = matrix(model$phi_xyk,ncol = model$nbParams)
+  kron = matrix(model$phi_xyk,ncol = model$dimTheta)
   Chat = c(c(muhat) %*% kron)
   #
   nbX = length (model$n)
@@ -560,12 +577,12 @@ mme.TU_empirical <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_lev
   A_11 = kronecker(matrix(1,nbY,1),sparseMatrix(1:nbI,1:nbI,x=1))
   A_12 = sparseMatrix(i=NULL,j=NULL,dims=c(nbI*nbY,nbJ),x=0)
   A_13 = kronecker(sparseMatrix(1:nbY,1:nbY,x=-1),I_ix)
-  A_14 = sparseMatrix(i=NULL,j=NULL,dims=c(nbI*nbY,model$nbParams),x=0)
+  A_14 = sparseMatrix(i=NULL,j=NULL,dims=c(nbI*nbY,model$dimTheta),x=0)
   #
   A_21 = sparseMatrix(i=NULL,j=NULL,dims=c(nbX*nbJ,nbI),x=0)
   A_22 = kronecker(sparseMatrix(1:nbJ,1:nbJ,x=1),matrix(1,nbX,1))
   A_23 = kronecker(t(I_yj),sparseMatrix(1:nbX,1:nbX,x=1))
-  A_24 = -t(matrix(matrix(t(kron),model$nbParams*nbX,nbY) %*% I_yj, model$nbParams, nbX*nbJ))
+  A_24 = -t(matrix(matrix(t(kron),model$dimTheta*nbX,nbY) %*% I_yj, model$dimTheta, nbX*nbJ))
   #
   A_1  = cbind(A_11,A_12,A_13, A_14)
   A_2  = cbind(A_21,A_22,A_23, A_24)
@@ -575,14 +592,14 @@ mme.TU_empirical <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_lev
   nbconstr = dim(A)[1]
   nbvar = dim(A)[2]
   #
-  lb  = c(epsilon0_i,t(eta0_j), rep(-Inf,nbX*nbY+model$nbParams))
+  lb  = c(epsilon0_i,t(eta0_j), rep(-Inf,nbX*nbY+model$dimTheta))
   rhs = c(epsilon_iy, eta_xj)
   obj = c(ni,mj,rep(0,nbX*nbY),c(-Chat))
   #
   result = genericLP(obj=obj,A=A,modelsense="min",rhs=rhs,sense=rep(">=",nbconstr),lb=lb)
   #
   U = matrix(result$solution[(nbI+nbJ+1):(nbI+nbJ+nbX*nbY)],nrow=nbX)
-  thetahat = result$solution[(nbI+nbJ+nbX*nbY+1):(nbI+nbJ+nbX*nbY+model$nbParams)]
+  thetahat = result$solution[(nbI+nbJ+nbX*nbY+1):(nbI+nbJ+nbX*nbY+model$dimTheta)]
   V = matrix(kron %*% thetahat,nbX,nbY) - U
   #
   muiy = matrix(result$pi[1:(nbI*nbY)],nrow=nbI)
@@ -605,9 +622,9 @@ buildModel_TU_none = function(phi_xyk, n=NULL, m=NULL,seed=777) {
   dims = dim(phi_xyk)
   nbX = dims[1]
   nbY = dims[2]
-  nbParams = dims[3]
+  dimTheta = dims[3]
   ret = list(  phi_xyk = phi_xyk,
-               nbParams = nbParams,                         
+               dimTheta = dimTheta,                         
                nbX=nbX,
                nbY=nbY,
                n = n,
@@ -618,19 +635,24 @@ buildModel_TU_none = function(phi_xyk, n=NULL, m=NULL,seed=777) {
 #
 parametricMarket.TU_none<- function(model, theta)
 {
-  phi_xy_vec = matrix(model$phi_xyk,ncol = model$nbParams) %*% theta
+  phi_xy_vec = matrix(model$phi_xyk,ncol = model$dimTheta) %*% theta
   phi_xy_mat = matrix(phi_xy_vec,model$nbX,model$nbY)
   return( build_market_TU_none(model$n,model$m,phi_xy_mat) )
 }
 #
-dparam.TU_none  <- function(model,dparams=diag(model$nbParams))
+dtheta_Psi.TU_none  <- function(model,deltaparams=diag(model$dimTheta))
 {
-  dparamsPsi = matrix(model$phi_xyk,ncol = model$nbParams) %*% dparams
-  dparamsG = matrix(0,nrow=0,ncol=dim(dparams)[2])
-  dparamsH = matrix(0,nrow=0,ncol=dim(dparams)[2])
-  return( list(dparamsPsi=dparamsPsi,
-               dparamsG = dparamsG,
-               dparamsH = dparamsH))
+  return( matrix(model$phi_xyk,ncol = model$dimTheta) %*% deltaparams)
+}
+#
+dtheta_G.TU_none  <- function(model,deltaparams=diag(model$dimTheta))
+{
+return(matrix(0,nrow=0,ncol=dim(deltaparams)[2])) 
+}
+#
+dtheta_H.TU_none  <- function(model,deltaparams=diag(model$dimTheta))
+{
+  return(matrix(0,nrow=0,ncol=dim(deltaparams)[2])) 
 }
 #
 mme.TU_none <- function(model, muhat, method = 1, xtol_rel=1e-4, maxeval=1e5, print_level=0)
@@ -648,7 +670,7 @@ MARP_min <-function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
   if (print_level>0){
     message(paste0("Moment Matching Estimation of TU_none model via LP optimization."))
   }
-  kron = matrix(model$phi_xyk,ncol = model$nbParams)
+  kron = matrix(model$phi_xyk,ncol = model$dimTheta)
   Chat = c(c(muhat) %*% kron)
   #
   nbX = length (model$n)
@@ -658,7 +680,7 @@ MARP_min <-function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
   A_12 = kronecker(sparseMatrix(1:nbY,1:nbY),matrix(1,nbX,1))
   A_13 = -kron
   A_1   = cbind(A_11,A_12,A_13)
-  A_2 = matrix(c(rep(0,nbX+nbY),rep(1,model$nbParams)),nrow=1)
+  A_2 = matrix(c(rep(0,nbX+nbY),rep(1,model$dimTheta)),nrow=1)
   #
   A = rbind(A_1,A_2)
   #
@@ -667,10 +689,10 @@ MARP_min <-function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
   #
   rhs = c(rep(0,nbX*nbY),1)
   obj = c(model$n,model$m,c(-Chat))
-  result = genericLP(obj=obj,A=A,modelsense="min",rhs=rhs,sense=c(rep(">",nbconstr-1),"="),lb=c(rep(0,nbX+nbY),rep(-Inf, model$nbParams) ))
+  result = genericLP(obj=obj,A=A,modelsense="min",rhs=rhs,sense=c(rep(">",nbconstr-1),"="),lb=c(rep(0,nbX+nbY),rep(-Inf, model$dimTheta) ))
   u = result$solution[1:nbX]
   v = result$solution[(nbX+1):(nbX+nbY)]
-  thetahat = result$solution[(1+nbX+nbY):(model$nbParams+nbX+nbY)]
+  thetahat = result$solution[(1+nbX+nbY):(model$dimTheta+nbX+nbY)]
   mu = matrix(result$pi[1:(nbX*nbY)],nbX,nbY)
   val = result$objval
   #
@@ -687,7 +709,7 @@ MARP_proj <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
   if (print_level>0){
     message(paste0("Moment Matching Estimation of TU_none model via LP optimization."))
   }
-  kron = matrix(model$phi_xyk,ncol = model$nbParams)
+  kron = matrix(model$phi_xyk,ncol = model$dimTheta)
   Chat = c(c(muhat) %*% kron)
   #
   nbX = length (model$n)
@@ -705,12 +727,12 @@ MARP_proj <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
   nbvar = dim(A)[2]
   #
   rhs = c(rep(0,nbX*nbY),1)
-  obj = c(model$n,model$m,rep(0,model$nbParams))
-  result = genericLP(obj=obj,A=A,modelsense="min",rhs=rhs,sense=c(rep(">=",nbconstr-1),"="),lb=c(rep(0,nbX+nbY),rep(-Inf, model$nbParams) ))
+  obj = c(model$n,model$m,rep(0,model$dimTheta))
+  result = genericLP(obj=obj,A=A,modelsense="min",rhs=rhs,sense=c(rep(">=",nbconstr-1),"="),lb=c(rep(0,nbX+nbY),rep(-Inf, model$dimTheta) ))
   val = result$objval
   u = result$solution[1:nbX]
   v = result$solution[(nbX+1):(nbX+nbY)]
-  thetahat =result$solution[(1+nbX+nbY):(model$nbParams+nbX+nbY)]
+  thetahat =result$solution[(1+nbX+nbY):(model$dimTheta+nbX+nbY)]
   gamma = result$pi[nbX*nbY+1]
   #
   ret = list(thetahat=thetahat,
@@ -738,9 +760,9 @@ buildModel_TU_rum = function(phi_xyk, n=NULL, m=NULL, arumsG, arumsH) {
     m = rep(1,nbY)
   }
   #
-  nbParams = dims[3]
+  dimTheta = dims[3]
   ret = list(  phi_xyk = phi_xyk,
-               nbParams = nbParams,                         
+               dimTheta = dimTheta,                         
                nbX=nbX,
                nbY=nbY,
                n = n,
@@ -755,19 +777,24 @@ buildModel_TU_rum = function(phi_xyk, n=NULL, m=NULL, arumsG, arumsH) {
 #
 parametricMarket.TU_rum <- function(model, theta)
 {
-  phi_xy_vec = matrix(model$phi_xyk,ncol = model$nbParams) %*% theta
+  phi_xy_vec = matrix(model$phi_xyk,ncol = model$dimTheta) %*% theta
   phi_xy_mat = matrix(phi_xy_vec,model$nbX,model$nbY)
   return(  build_market_TU_general(model$n,model$m,phi_xy_mat,model$arumsG,model$arumsH))
 }
 #
-dparam.TU_rum  <- function(model,dparams=diag(model$nbParams))
+dtheta_Psi.TU_rum  <- function(model,deltaparams=diag(model$dimTheta))
 {
-  dparamsPsi = matrix(model$phi_xyk,ncol = model$nbParams) %*% dparams
-  dparamsG = matrix(0,nrow=0,ncol=dim(dparams)[2])
-  dparamsH = matrix(0,nrow=0,ncol=dim(dparams)[2])
-  return( list(dparamsPsi=dparamsPsi,
-               dparamsG = dparamsG,
-               dparamsH = dparamsH))
+  return( matrix(model$phi_xyk,ncol = model$dimTheta) %*% deltaparams)
+}
+#
+dtheta_G.TU_rum  <- function(model,deltaparams=diag(model$dimTheta))
+{
+  return(matrix(0,nrow=0,ncol=dim(deltaparams)[2])) 
+}
+#
+dtheta_H.TU_rum  <- function(model,deltaparams=diag(model$dimTheta))
+{
+  return(matrix(0,nrow=0,ncol=dim(deltaparams)[2])) 
 }
 #
 mme.TU_rum <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
@@ -776,11 +803,10 @@ mme.TU_rum <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
     message(paste0("Moment Matching Estimation of TU_rum model via optimization."))
   }
 
-  theta0 = initparam(model)$param
-  dtheta = dparam(model)
+  theta0 = inittheta(model)$theta
   market = parametricMarket(model,theta0)
   
-  kron = dtheta$dparamsPsi
+  kron = dtheta_Psi(model)
   Chat = c(c(muhat) %*% kron)
   #
   if (print_level>0){
@@ -790,11 +816,11 @@ mme.TU_rum <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
   nbX = length(model$n)
   nbY = length(model$m)
   
-  nbParams = dim(kron)[2]
+  dimTheta = dim(kron)[2]
   #
   eval_f <- function(thearg){
     theU = matrix(thearg[1:(nbX*nbY)],nbX,nbY)
-    thetheta = thearg[(1+nbX*nbY):(nbParams+nbX*nbY)]
+    thetheta = thearg[(1+nbX*nbY):(dimTheta+nbX*nbY)]
     
     phi = kron %*% thetheta
     phimat = matrix(phi,nbX,nbY)
@@ -823,10 +849,10 @@ mme.TU_rum <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
                            "maxeval"=maxeval,
                            "print_level"=print_level))
   #
-  #if(print_level>0){print(resopt, show.controls=((1+nbX*nbY):(nbParams+nbX*nbY)))}
+  #if(print_level>0){print(resopt, show.controls=((1+nbX*nbY):(dimTheta+nbX*nbY)))}
   #
   U = matrix(resopt$solution[1:(nbX*nbY)],nbX,nbY)  
-  thetahat = resopt$solution[(1+nbX*nbY):(nbParams+nbX*nbY)]
+  thetahat = resopt$solution[(1+nbX*nbY):(dimTheta+nbX*nbY)]
   V = matrix(kron %*% thetahat,nbX,nbY) - U
   #
   if (resopt$status<0) {warning("nloptr convergence failed.")}

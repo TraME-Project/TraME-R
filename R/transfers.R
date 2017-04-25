@@ -81,13 +81,13 @@ du_Psi.TU <- function(tr, U, V) (matrix(1/2, nrow=tr$nbX, ncol=tr$nbY))
 #
 du_Psi_sub.TU <- function(tr, U, V, xs, ys) (matrix(1/2, nrow=length(xs), ncol=length(ys)))
 #
-dtheta_Psi.TU <- function(tr, U, V, dtheta=NULL) 
+dparams_Psi.TU <- function(tr, U, V, deltaparamsPsi=NULL) 
 {
   ret <- 0
-  if(is.null(dtheta)){
+  if(is.null(deltaparamsPsi)){
     ret = Diagonal(tr$nbX*tr$nbY,-1/2)
   }else{
-    ret = -dtheta/2
+    ret = -deltaparamsPsi/2
   }
   return(ret)
 }
@@ -150,18 +150,18 @@ du_Psi.NTU <- function(tr, U, V) ( ifelse(U-tr$alpha >= V - tr$gamma,1,0) )
 #
 du_Psi_sub.NTU <- function(tr, U, V, xs, ys) (ifelse(U-tr$alpha[xs,ys] >= V - tr$gamma[xs,ys],1,0))
 #
-dtheta_Psi.NTU <- function(tr, U, V, dtheta=NULL) 
+dparams_Psi.NTU <- function(tr, U, V, deltaparamsPsi=NULL) 
 {
   dupsi = c(du_Psi(tr,U,V))
-  if(is.null(dtheta)){
+  if(is.null(deltaparamsPsi)){
     ret = -cbind(Diagonal(x=dupsi),
                  Diagonal(x=1- dupsi)) 
     return(ret)
   }else{
-    dtheta1 = dtheta[1:(tr$nbX*tr$nbY)]
-    dtheta2 = dtheta[(1+tr$nbX*tr$nbY):(2*tr$nbX*tr$nbY)]
+    deltaparams1 = deltaparamsPsi[1:(tr$nbX*tr$nbY)]
+    deltaparams2 = deltaparamsPsi[(1+tr$nbX*tr$nbY):(2*tr$nbX*tr$nbY)]
     #
-    ret = -c(dupsi*dtheta1 + (1-dupsi)*dtheta2)
+    ret = -c(dupsi*deltaparams1 + (1-dupsi)*deltaparams2)
     return(ret)
   }
 }
@@ -239,19 +239,19 @@ du_Psi.LTU <- function(tr, ...) ( tr$lambda )
 #
 du_Psi_sub.LTU <- function(tr, U, V,xs,ys) ( tr$lambda[xs,ys] )
 #
-dtheta_Psi.LTU <- function(tr, U, V, dtheta=NULL) 
+dparams_Psi.LTU <- function(tr, U, V, deltaparamsPsi=NULL) 
 {
   UminusV = c(U - V)
-  dtheta1 <- dtheta2 <- ret <- 0
+  deltaparams1 <- deltaparams2 <- ret <- 0
   #
-  if(is.null(dtheta)){
+  if(is.null(deltaparamsPsi)){
     ret = cbind(Diagonal(x=UminusV), Diagonal(tr$nbX*tr$nbY,-1))
     return(ret)
   }else{
-    dtheta1 = dtheta[1:(tr$nbX*tr$nbY)]
-    dtheta2 = dtheta[(1+tr$nbX*tr$nbY):(2*tr$nbX*tr$nbY)]
+    deltaparams1 = deltaparamsPsi[1:(tr$nbX*tr$nbY)]
+    deltaparams2 = deltaparamsPsi[(1+tr$nbX*tr$nbY):(2*tr$nbX*tr$nbY)]
     #
-    ret = c(UminusV*dtheta1 - dtheta2)
+    ret = c(UminusV*deltaparams1 - deltaparams2)
     return(ret)
   }
 }
@@ -337,14 +337,14 @@ du_Psi.ETU <- function(tr, U, V) ( 1/(1 + exp((V - U + tr$alpha - tr$gamma)/(tr$
 du_Psi_sub.ETU <- function(tr, U, V, xs, ys) (1/(1 + exp((V - U + tr$alpha[xs,ys] - tr$gamma[xs,ys])
                                                          /(tr$tau[xs,ys]))))
 #
-dtheta_Psi.ETU <- function(tr, U, V, dtheta=NULL) 
+dparams_Psi.ETU <- function(tr, U, V, deltaparamsPsi=NULL) 
 {
   dupsimat = du_Psi(tr,U,V)
   dupsi = c(dupsimat)
   #
   term_1 <- term_2 <- ret <- 0
   #
-  if(is.null(dtheta)){
+  if(is.null(deltaparamsPsi)){
     term_1 = (U - tr$alpha )*dupsi
     term_2 = (V - tr$gamma)*(1-dupsi)
     #
@@ -356,20 +356,20 @@ dtheta_Psi.ETU <- function(tr, U, V, dtheta=NULL)
     #
     return(ret)
   }else{
-    dtheta1 = dtheta[1:(tr$nbX*tr$nbY),]
-    dtheta2 = dtheta[(1+tr$nbX*tr$nbY):(2*tr$nbX*tr$nbY),]
-    dtheta3 = dtheta[(1+2*tr$nbX*tr$nbY):(3*tr$nbX*tr$nbY),]
+    deltaparams1 = deltaparamsPsi[1:(tr$nbX*tr$nbY),]
+    deltaparams2 = deltaparamsPsi[(1+tr$nbX*tr$nbY):(2*tr$nbX*tr$nbY),]
+    deltaparams3 = deltaparamsPsi[(1+2*tr$nbX*tr$nbY):(3*tr$nbX*tr$nbY),]
     #
-    if(min(dtheta3==0)){
-      dsigmapsidtheta = 0
+    if(min(deltaparams3==0)){
+      dsigmapsidparams = 0
     }else{
       term_1 = (U - tr$alpha )*dupsimat
       term_2 = (V - tr$gamma)*(1-dupsimat)
       #
-      dsigmapsidtheta = dtheta3*c((Psi(tr,U,V) - term_1 - term_2) / tr$tau)
+      dsigmapsidparams = deltaparams3*c((Psi(tr,U,V) - term_1 - term_2) / tr$tau)
     }
     #
-    ret = c(-dupsi*dtheta1 - (1-dupsi)*dtheta2 + dsigmapsidtheta)
+    ret = c(-dupsi*deltaparams1 - (1-dupsi)*deltaparams2 + dsigmapsidparams)
     #
     return(ret)
   }

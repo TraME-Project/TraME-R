@@ -46,9 +46,9 @@ test_loglikelihood <- function(seed=777, nbX=5, nbY=4, dX=3, dY=2)
     muhat0y  = m-apply(muhat,2,sum)
     #
     TUlogitmodel = buildModel_TU_logit(array(kronecker(ys,xs) , dim=c(nbX,nbY,dX*dY) ),n,m)
-    theta0=initparam(TUlogitmodel)$param
+    theta0=inittheta(TUlogitmodel)$theta
     market = parametricMarket(TUlogitmodel,theta0)
-    dtheta = diag(TUlogitmodel$nbParams)
+    dtheta = diag(TUlogitmodel$dimTheta)
     #dtheta = matrix(0.1,nrow=6,ncol=1)
     #
     tsf = proc.time()  

@@ -239,14 +239,14 @@ D2Gstar.RSC <- function(arums, mu, n, xFirst=TRUE)
     return(ret)
 }
 
-dtheta_NablaGstar.RSC <- function(arums, mu, n, dtheta=diag(arums$nbParams), xFirst=TRUE)
+dparams_NablaGstar.RSC <- function(arums, mu, n, deltaparamsG=diag(arums$nbParams), xFirst=TRUE)
 {
-    if(length(dtheta)==0){
+    if(length(deltaparamsG)==0){
         return(matrix(0,nrow=arums$nbX*arums$nbY,ncol=0))
     }
     #
-    nbDirs = length(dtheta) %/% (arums$nbX * arums$nbX * (arums$nbY+1))
-    dthetamat = array(dtheta,dim=c(arums$nbX,arums$nbY+1,arums$nbX,nbDirs))
+    nbDirs = length(deltaparamsG) %/% (arums$nbX * arums$nbX * (arums$nbY+1))
+    deltaparamsGmat = array(deltaparamsG,dim=c(arums$nbX,arums$nbY+1,arums$nbX,nbDirs))
     #
     mux0 = n - apply(mu,1,sum)
     if(xFirst){
@@ -260,9 +260,9 @@ dtheta_NablaGstar.RSC <- function(arums, mu, n, dtheta=diag(arums$nbParams), xFi
         e = diag( c(0,arums$aux_quant_eps(tsfull[1:arums$nbY])) )
         
         if(xFirst){
-            ders[x,,x,] = -arums$aux_Influence_lhs[[x]] %*% e %*% arums$aux_Influence_rhs[[x]] %*% dthetamat[x,,]
+            ders[x,,x,] = -arums$aux_Influence_lhs[[x]] %*% e %*% arums$aux_Influence_rhs[[x]] %*% deltaparamsGmat[x,,]
         }else{
-            ders[,x,x,] = -arums$aux_Influence_lhs[[x]] %*% e %*% arums$aux_Influence_rhs[[x]] %*% dthetamat[x,,]
+            ders[,x,x,] = -arums$aux_Influence_lhs[[x]] %*% e %*% arums$aux_Influence_rhs[[x]] %*% deltaparamsGmat[x,,]
         }
     }
     #

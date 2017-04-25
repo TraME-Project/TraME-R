@@ -36,7 +36,7 @@ D2G <- function (arums, ...) UseMethod("D2G")
 
 D2Gstar <- function (arums, ...) UseMethod("D2Gstar")
 
-dtheta_NablaGstar <- function (arums, ...) UseMethod("dtheta_NablaGstar")
+dparams_NablaGstar <- function (arums, ...) UseMethod("dparams_NablaGstar")
 
 Gbar <- function(arums, ...) UseMethod("Gbar")
 
@@ -54,7 +54,7 @@ mmfsTranspose <- function(mmfs) UseMethod("mmfsTranspose")
 
 M <- function(mmfs,...) UseMethod("M")
 
-dtheta_M <- function (mmfs, ...) UseMethod("dtheta_M")
+dparams_M <- function (mmfs, ...) UseMethod("dparams_M")
 
 dmux0s_M <- function (mmfs,mux0s,mu0ys) UseMethod("dmux0s_M")
 
@@ -72,9 +72,16 @@ solveEquilibrium <- function(market, ...) UseMethod("solveEquilibrium")
 
 parametricMarket <- function(model, ...) UseMethod("parametricMarket")
 
-initparam <- function(model, ...) UseMethod("initparam")
+inittheta <- function(model, ...) UseMethod("inittheta")
 
-dparam <- function(model, ...) UseMethod("dparam")
+dtheta_Psi <- function(model, ...) UseMethod("dtheta_Psi")
+
+dtheta_G <- function(model, ...) UseMethod("dtheta_G")
+
+dtheta_H <- function(model, ...) UseMethod("dtheta_H")
+
+dtheta_M <- function(model, ...) UseMethod("dtheta_M")
+
 
 estimate <- function(model, ...) UseMethod("estimate")
 
@@ -88,7 +95,11 @@ du_Psi <- function(tr, ...) UseMethod("du_Psi")
 
 du_Psi_sub <- function(tr, ...) UseMethod("du_Psi")
 
-dtheta_Psi <- function(tr, ...) UseMethod("dtheta_Psi")
+dparams_Psi <- function(tr, ...) UseMethod("dparams_Psi")
+
+dparams_G <- function(tr, ...) UseMethod("dparams_G")
+
+dparams_H <- function(tr, ...) UseMethod("dparams_H")
 
 determineType <- function(tr, ...) UseMethod("determineType")
 
