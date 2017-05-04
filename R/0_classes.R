@@ -68,23 +68,6 @@ margyInv <- function(ys, mmfs, ...) UseMethod("margyInv",mmfs)
 
 solveEquilibrium <- function(market, ...) UseMethod("solveEquilibrium")
 
-# models
-
-parametricMarket <- function(model, ...) UseMethod("parametricMarket")
-
-inittheta <- function(model, ...) UseMethod("inittheta")
-
-dtheta_Psi <- function(model, ...) UseMethod("dtheta_Psi")
-
-dtheta_G <- function(model, ...) UseMethod("dtheta_G")
-
-dtheta_H <- function(model, ...) UseMethod("dtheta_H")
-
-dtheta_M <- function(model, ...) UseMethod("dtheta_M")
-
-
-estimate <- function(model, ...) UseMethod("estimate")
-
 # transfer classes
 
 Psi <- function(tr, ...) UseMethod("Psi")
@@ -125,4 +108,4 @@ M <- function(mmfs, ...) UseMethod("M")
 
 # estimation classes
 
-mme <- function(model, ...) UseMethod("mme")
+dtheta_mu <- function(model, ...) UseMethod("dtheta_mu")

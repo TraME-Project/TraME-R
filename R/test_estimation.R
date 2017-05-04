@@ -45,19 +45,19 @@ test_loglikelihood <- function(seed=777, nbX=5, nbY=4, dX=3, dY=2)
     muhatx0  = n-apply(muhat,1,sum)
     muhat0y  = m-apply(muhat,2,sum)
     #
-    TUlogitmodel = buildModel_TU_logit(array(kronecker(ys,xs) , dim=c(nbX,nbY,dX*dY) ),n,m)
-    theta0=inittheta(TUlogitmodel)$theta
-    market = parametricMarket(TUlogitmodel,theta0)
+    TUlogitmodel = buildModel_TUlogit(array(kronecker(ys,xs) , dim=c(nbX,nbY,dX*dY) ),n,m)
+    theta0=TUlogitmodel$inittheta(TUlogitmodel)$theta
+    market = TUlogitmodel$parametricMarket(TUlogitmodel,theta0)
     dtheta = diag(TUlogitmodel$dimTheta)
     #dtheta = matrix(0.1,nrow=6,ncol=1)
     #
     tsf = proc.time()  
-    #mudmu = dtheta_mu_default(TUlogitmodel,market,theta0,dtheta)
-    mudmu = dtheta_mu_default(TUlogitmodel,market,theta0)
+    
+    mudmu = dtheta_mu(TUlogitmodel,theta0)
     message(paste0('Time elapsed - general: ', round((proc.time()-tsf)["elapsed"],5), 's.')) 
     #
     tsf = proc.time()  
-    dmunum = dtheta_mu_numeric(TUlogitmodel,market,theta0,dtheta)
+    dmunum = dtheta_mu_numeric(TUlogitmodel,theta0,dtheta)
     message(paste0('Time elapsed - numerical: ', round((proc.time()-tsf)["elapsed"],5), 's.')) 
     #
     tsf = proc.time()    
@@ -108,7 +108,7 @@ test_mle <- function(seed=777, nbX=80, nbY=72, noiseScale=0.1, dX=3, dY=3)
     noise = matrix(1+ noiseScale*rnorm(nbX*nbY),nrow=nbX)
     muhat = solveEquilibrium(mktLogit, xFirst=T, notifications =F)$mu * noise
     #
-    TUlogitmodel = buildModel_TU_logit(array(kronecker(ys,xs) , dim=c(nbX,nbY,dX*dY) ),n,m)
+    TUlogitmodel = buildModel_TUlogit(array(kronecker(ys,xs) , dim=c(nbX,nbY,dX*dY) ),n,m)
     thetahat = mle(TUlogitmodel,muhat, print_level=0)$thetahat
     #
     message("Estimator:")
@@ -147,8 +147,8 @@ test_mme <- function(seed=777, nbX=80, nbY=72, noiseScale=0.1, dX=3, dY=3)
     noise = matrix(1 + noiseScale*rnorm(nbX*nbY),nrow=nbX)
     muhat = solveEquilibrium(mktLogit, xFirst=T, notifications=F)$mu * noise
     #
-    TUlogitmodel = buildModel_TU_logit(array(kronecker(ys,xs) , dim=c(nbX,nbY,dX*dY) ),n,m)
-    thetahat = mme(TUlogitmodel,muhat, print_level=0)$thetahat
+    TUlogitmodel = buildModel_TUlogit(array(kronecker(ys,xs) , dim=c(nbX,nbY,dX*dY) ),n,m)
+    thetahat = TUlogitmodel$mme(TUlogitmodel,muhat, print_level=0)$thetahat
     #
     message("Estimator:")
     print(thetahat)  

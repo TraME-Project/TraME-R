@@ -22,16 +22,25 @@
 ################################################################################
 ########################       default methods           #######################
 ################################################################################
-inittheta.default <- function(model)
+inittheta_default <- function(model)
 {
   ret = list(theta=rep(0,model$dimTheta),
              lb = NULL, ub = NULL)
 }
-estimate.default = mle
 #
+dtheta_G_default <- function(model, deltatheta=diag(model$dimTheta))
+{
+  return( matrix(0,nrow=0,ncol=dim(deltatheta)[2]) )
+}
+#
+dtheta_H_default <- function(model, deltatheta=diag(model$dimTheta))
+{
+  return( matrix(0,nrow=0,ncol=dim(deltatheta)[2]) )
+}
 ################################################################################
 ########################       affinity model            #######################
 ################################################################################
+#
 #
 buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1 )
 {
@@ -52,7 +61,7 @@ buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1 )
   #
   neededNorm = defaultNorm(TRUE)
   #
-  ret = list(types = c("itu-rum", "mfe"),
+  ret = list(type = c("affinity"),
              dimTheta=dX*dY,
              dX=dX, dY=dY,
              nbX = nbX, nbY = nbY,
@@ -65,26 +74,22 @@ buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1 )
              Phi_xy = function(model ,lambda) 
                ( array(model$phi_xyk_aux,dim=c(model$nbX*model$nbY,model$dimTheta)) %*% lambda ),
              Phi_k = function(model, muhat) 
-               (c(c(muhat) %*% array(model$phi_xyk_aux,dim=c(model$nbX*model$nbY,model$dimTheta))))
-               )
-  class(ret) = "affinity"
+               (c(c(muhat) %*% array(model$phi_xyk_aux,dim=c(model$nbX*model$nbY,model$dimTheta)))),
+             inittheta = inittheta_default,
+             dtheta_Psi = dtheta_Psi_affinity,
+             dtheta_G = dtheta_G_default,
+             dtheta_H = dtheta_H_default,
+             mme = mme_affinity,
+             parametricMarket = parametricMarket_affinity
+  )
+  
+  class(ret) = "DSE_model"
   #
   return(ret)
 }
 #
-parametricMarket.affinity <- function(model, theta) 
-  (build_market_TU_logit(model$n,model$m,
-                         matrix(model$Phi_xy(model,c(theta)), nrow=model$nbX),
-                         sigma=model$sigma,neededNorm=model$neededNorm))
-
-dtheta_Psi.affinity <- function(model, deltaparams=diag(model$dimTheta))
-  (return(model$Phi_xy(model, deltaparams)))
-
-dtheta_G.affinity <- function(model, deltaparams=diag(model$dimTheta))
-  (return(matrix(0,nrow=0,ncol=dim(deltaparams)[2])))
-
-dtheta_H.affinity <- function(model, deltaparams=diag(model$dimTheta))
-  (return(matrix(0,nrow=0,ncol=dim(deltaparams)[2])))
+dtheta_Psi_affinity <- function(model, deltatheta=diag(model$dimTheta))
+  (return(model$Phi_xy(model, deltatheta)))
 #
 #
 mmeaffinityNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
@@ -95,8 +100,7 @@ mmeaffinityNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp
     message(paste0("Moment Matching Estimation of Affinity model via IPFP+BFGS optimization."))
   }
   #
-  theta0 = inittheta(model)$theta
-  #market = parametricMarket(model,theta0)
+  theta0 = model$inittheta(model)$theta
   Chat = model$Phi_k(model, muhat)
   nbX = model$nbX
   nbY = model$nbY
@@ -173,7 +177,7 @@ mmeaffinityWithRegul <- function(model, muhat, lambda, xtol_rel=1e-4, maxeval=1e
     message(paste0("Moment Matching Estimation of Affinity model with regularization via proximal gradient."))
   }
   #
-  theta0 = inittheta(model)$theta
+  theta0 = model$inittheta(model)$theta
   Chat = model$Phi_k(model, muhat)
   nbX = model$nbX
   nbY = model$nbY
@@ -269,7 +273,7 @@ mmeaffinityWithRegul <- function(model, muhat, lambda, xtol_rel=1e-4, maxeval=1e
 }
 #
 #
-mme.affinity <- function(model, muhat, lambda = NULL, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
+mme_affinity <- function(model, muhat, lambda = NULL, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
 {
   if (is.null(lambda))
   {return(mmeaffinityNoRegul(model,muhat, xtol_rel , maxeval , tolIpfp , maxiterIpfp , print_level))}
@@ -277,11 +281,19 @@ mme.affinity <- function(model, muhat, lambda = NULL, xtol_rel=1e-4, maxeval=1e5
   { return(mmeaffinityWithRegul(model,muhat, lambda, xtol_rel , maxeval , tolIpfp , maxiterIpfp , print_level)) }
 }
 #
+parametricMarket_affinity <- function(model, theta) 
+  (build_market_TU_logit(model$n,model$m,
+                         matrix(model$Phi_xy(model,c(theta)), nrow=model$nbX),
+                         sigma=model$sigma,neededNorm=model$neededNorm))
+
+#
 ################################################################################
 ########################       TU_logit model            #######################
 ################################################################################
 # The TU_logit and the affinity models should be merged
-buildModel_TU_logit <- function(phi_xyk, n=NULL, m=NULL,noSingles=FALSE)
+#
+#
+buildModel_TUlogit <- function(phi_xyk, n=NULL, m=NULL,noSingles=FALSE)
 {
   dims = dim(phi_xyk)
   nbX = dims[1]
@@ -297,18 +309,25 @@ buildModel_TU_logit <- function(phi_xyk, n=NULL, m=NULL,noSingles=FALSE)
   #  
   neededNorm = defaultNorm(noSingles)
   #
-  ret = list(types = c("itu-rum", "mfe"),
+  ret = list(types = c("TUlogit"),
              phi_xyk = phi_xyk,
              dimTheta = dimTheta,
              nbX = nbX, nbY = nbY,
              n=n, m=m,
-             neededNorm = neededNorm)
-  class(ret) = "TU_logit"
+             neededNorm = neededNorm,
+             inittheta = inittheta_default,
+             dtheta_Psi = dtheta_Psi_TUlogit,
+             dtheta_G = dtheta_G_default,
+             dtheta_H = dtheta_H_default,
+             mme = mme_TUlogit,
+             parametricMarket = parametricMarket_TUlogit
+  )
+  class(ret) = "DSE_model"
   #
   return(ret)
 }
 #
-parametricMarket.TU_logit<- function(model, theta)
+parametricMarket_TUlogit<- function(model, theta)
   # theta is the parameter vector for phi
 {
   phi_xy_vec = matrix(model$phi_xyk,ncol = model$dimTheta) %*% theta
@@ -316,33 +335,23 @@ parametricMarket.TU_logit<- function(model, theta)
   return( build_market_TU_logit(model$n,model$m,phi_xy_mat,
                                 neededNorm=model$neededNorm) )
 }
-
-dtheta_Psi.TU_logit <- function(model, deltaparams=diag(model$dimTheta))
+#
+dtheta_Psi_TUlogit <- function(model, deltatheta=diag(model$dimTheta))
 {
-  return( matrix(model$phi_xyk,ncol = model$dimTheta) %*% deltaparams )
+  return( matrix(model$phi_xyk,ncol = model$dimTheta) %*% deltatheta )
 }
 #
-dtheta_G.TU_logit <- function(model, deltaparams=diag(model$dimTheta))
-{
-  return( matrix(0,nrow=0,ncol=dim(deltaparams)[2]) )
-}
-#
-dtheta_H.TU_logit <- function(model, deltaparams=diag(model$dimTheta))
-{
-  return( matrix(0,nrow=0,ncol=dim(deltaparams)[2]) )
-}
-
-mme.TU_logit <-  function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
+mme_TUlogit <-  function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
   # mme.affinity should be improved as one should make use of the logit structure and use the ipfp
 {
   if (print_level>0){
     message(paste0("Moment Matching Estimation of TU_rum model via optimization."))
   }
   
-  theta0 = inittheta(model)$theta
-  market = parametricMarket(model,theta0)
+  theta0 = model$inittheta(model)$theta
+  market = model$parametricMarket(model,theta0)
   
-  kron = dtheta_Psi(model)
+  kron = model$dtheta_Psi(model)
   Chat = c(c(muhat) %*% kron)
   #
   if (print_level>0){
@@ -401,12 +410,12 @@ mme.TU_logit <-  function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=
   return(ret)
 }
 #
-#
 ################################################################################
 ########################      ETU-logit model            #######################
 ################################################################################
 #
-buildModel_ETU_logit <- function(Xvals, Yvals, n=NULL, m=NULL)
+#
+buildModel_ETUlogit <- function(Xvals, Yvals, n=NULL, m=NULL)
 {
   nbX = dim(t(t(Xvals)))[1]
   nbY = dim(t(t(Yvals)))[1]
@@ -426,18 +435,24 @@ buildModel_ETU_logit <- function(Xvals, Yvals, n=NULL, m=NULL)
     m=rep(1,nbY)
   }
   #
-  ret = list(types = c("itu-rum", "mfe"),
+  ret = list(types = c("ETUlogit"),
              diff=diff,
              dimTheta=2*dim(t(t(diff)))[2]+1,
              nbX=nbX, nbY=nbY,
              dX=dX, dY=dY,
-             n=n, m=m)
-  class(ret) = "ETU_logit"
+             n=n, m=m,
+             inittheta = inittheta_ETUlogit,
+             dtheta_Psi = dtheta_Psi_ETUlogit,
+             dtheta_G = dtheta_G_default,
+             dtheta_H = dtheta_H_default,
+             mme = mme_ETUlogit,
+             parametricMarket = parametricMarket_ETUlogit)
+  class(ret) = "DSE_model"
   #
   return(ret)
 }
-
-parametricMarket.ETU_logit <- function(model, theta)
+#
+parametricMarket_ETUlogit <- function(model, theta)
   # the theta are the parameters for alpha, gamma and tau
 {
   theta1 = theta[1:model$dX]
@@ -454,7 +469,7 @@ parametricMarket.ETU_logit <- function(model, theta)
   return(ret)
 }
 
-dtheta_Psi.ETU_logit <- function(model, deltaparams=diag(model$dimTheta))
+dtheta_Psi_ETUlogit <- function(model, deltatheta=diag(model$dimTheta))
   # params is simply the affinity matrix
 {
   zero1 = matrix(0,model$nbX*model$nbY,model$dX)
@@ -462,24 +477,12 @@ dtheta_Psi.ETU_logit <- function(model, deltaparams=diag(model$dimTheta))
   zero3 = matrix(0,model$nbX*model$nbY,1)
   #
   return( rbind(cbind(model$diff,zero2,zero3),
-                     cbind(zero1,model$diff,zero3),
-                     cbind(zero1,zero2,rep(1,model$nbX*model$nbY)))
+                cbind(zero1,model$diff,zero3),
+                cbind(zero1,zero2,rep(1,model$nbX*model$nbY)))
   )
 }
 #
-dtheta_G.ETU_logit <- function(model, deltaparams=diag(model$dimTheta))
-  # params is simply the affinity matrix
-{
-  return( matrix(0,nrow=1,ncol=dim(deltaparams)[2])) 
-}
-#
-dtheta_H.ETU_logit <- function(model, deltaparams=diag(model$dimTheta))
-  # params is simply the affinity matrix
-{
-  return( matrix(0,nrow=1,ncol=dim(deltaparams)[2])) 
-}
-
-inittheta.ETU_logit <- function(model)
+inittheta_ETUlogit <- function(model)
 {
   ret = list(theta=c(rep(0,model$dimTheta-1),1),
              lb=NULL,ub=NULL)
@@ -491,11 +494,12 @@ inittheta.ETU_logit <- function(model)
 ########################      TU-empirical model            ####################
 ################################################################################
 #
-buildModel_TU_empirical = function(phi_xyk, n=NULL, m=NULL, arumsG, arumsH) {
+#
+buildModel_TUempirical = function(phi_xyk, n=NULL, m=NULL, arumsG, arumsH) {
   if  (class(arumsG)!="empirical" )
-  {stop("arumsG provided to buildModel_TU_empirical is not of class empirical.")}
+  {stop("arumsG provided to buildModel_TUempirical is not of class empirical.")}
   if  (class(arumsH)!="empirical" )
-  {stop("arumsH provided to buildModel_TU_empirical is not of class empirical.")}
+  {stop("arumsH provided to buildModel_TUempirical is not of class empirical.")}
   dims = dim(phi_xyk)
   nbX = dims[1]
   nbY = dims[2]
@@ -508,43 +512,41 @@ buildModel_TU_empirical = function(phi_xyk, n=NULL, m=NULL, arumsG, arumsH) {
   }
   #
   dimTheta = dims[3]
-  ret = list(  phi_xyk = phi_xyk,
+  ret = list(  types = c("TUempirical"),
+               phi_xyk = phi_xyk,
                dimTheta = dimTheta,                         
                nbX=nbX,
                nbY=nbY,
                n = n,
                m = m,
                arumsG=arumsG,
-               arumsH=arumsH)
+               arumsH=arumsH,
+               inittheta = inittheta_default,
+               dtheta_Psi = dtheta_Psi_TUempirical,
+               dtheta_G = dtheta_G_default,
+               dtheta_H = dtheta_H_default,
+               mme = mme_TUempirical,
+               parametricMarket = parametricMarket_TUempirical)
   
-  class(ret) =   "TU_empirical"
+  class(ret) =   "DSE_model"
   return(ret)
   
 }
+
 #
-parametricMarket.TU_empirical <- function(model, theta)
+parametricMarket_TUempirical <- function(model, theta)
 {
   phi_xy_vec = matrix(model$phi_xyk,ncol = model$dimTheta) %*% theta
   phi_xy_mat = matrix(phi_xy_vec,model$nbX,model$nbY)
-return(  build_market_TU_general(model$n,model$m,phi_xy_mat,model$arumsG,model$arumsH))
+  return(  build_market_TU_general(model$n,model$m,phi_xy_mat,model$arumsG,model$arumsH))
 }
 #
-dtheta_Psi.TU_empirical  <- function(model,deltaparams=diag(model$dimTheta))
+dtheta_Psi_TUempirical  <- function(model,deltatheta=diag(model$dimTheta))
 {
-  return(matrix(model$phi_xyk,ncol = model$dimTheta) %*% deltaparams) 
+  return(matrix(model$phi_xyk,ncol = model$dimTheta) %*% deltatheta) 
 }
 #
-dtheta_G.TU_empirical  <- function(model,deltaparams=diag(model$dimTheta))
-{
-  return(matrix(0,nrow=0,ncol=dim(deltaparams)[2]) )
-}
-#
-dtheta_H.TU_empirical  <- function(model,deltaparams=diag(model$dimTheta))
-{
-  return(matrix(0,nrow=0,ncol=dim(deltaparams)[2]) )
-}
-#
-mme.TU_empirical <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
+mme_TUempirical <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
 {
   if (print_level>0){
     message(paste0("Moment Matching Estimation of TU_empirical model via LP optimization."))
@@ -618,55 +620,54 @@ mme.TU_empirical <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_lev
 ########################          TU-none model             ####################
 ################################################################################
 #
-buildModel_TU_none = function(phi_xyk, n=NULL, m=NULL,seed=777) {
+#
+buildModel_TUnone = function(phi_xyk, n=NULL, m=NULL,seed=777) {
   dims = dim(phi_xyk)
   nbX = dims[1]
   nbY = dims[2]
   dimTheta = dims[3]
-  ret = list(  phi_xyk = phi_xyk,
+  ret = list(  types = c("TUnone"),
+               phi_xyk = phi_xyk,
                dimTheta = dimTheta,                         
                nbX=nbX,
                nbY=nbY,
                n = n,
-               m = m)
-  class(ret) =   "TU_none"
+               m = m,
+               inittheta = inittheta_default,
+               dtheta_Psi = dtheta_Psi_TUnone,
+               dtheta_G = dtheta_G_default,
+               dtheta_H = dtheta_H_default,
+               mme = mme_TUnone,
+               parametricMarket = parametricMarket_TUnone)
+  class(ret) =   "DSE_model"
   return(ret)
 }
 #
-parametricMarket.TU_none<- function(model, theta)
+parametricMarket_TUnone<- function(model, theta)
 {
   phi_xy_vec = matrix(model$phi_xyk,ncol = model$dimTheta) %*% theta
   phi_xy_mat = matrix(phi_xy_vec,model$nbX,model$nbY)
   return( build_market_TU_none(model$n,model$m,phi_xy_mat) )
 }
 #
-dtheta_Psi.TU_none  <- function(model,deltaparams=diag(model$dimTheta))
+dtheta_Psi_TUnone  <- function(model,deltatheta=diag(model$dimTheta))
 {
-  return( matrix(model$phi_xyk,ncol = model$dimTheta) %*% deltaparams)
+  return( matrix(model$phi_xyk,ncol = model$dimTheta) %*% deltatheta)
 }
 #
-dtheta_G.TU_none  <- function(model,deltaparams=diag(model$dimTheta))
-{
-return(matrix(0,nrow=0,ncol=dim(deltaparams)[2])) 
-}
 #
-dtheta_H.TU_none  <- function(model,deltaparams=diag(model$dimTheta))
-{
-  return(matrix(0,nrow=0,ncol=dim(deltaparams)[2])) 
-}
-#
-mme.TU_none <- function(model, muhat, method = 1, xtol_rel=1e-4, maxeval=1e5, print_level=0)
+mme_TUnone <- function(model, muhat, method = 1, xtol_rel=1e-4, maxeval=1e5, print_level=0)
 {
   if (method==1)
-{return(MARP_proj(model,muhat,xtol_rel ,maxeval,print_level ))}
+  {return(MARP_proj(model,muhat,xtol_rel ,maxeval,print_level ))}
   else
   {return(MARP_min(model,muhat,xtol_rel ,maxeval,print_level ))}
-
-  }
-
   
+}
+
+
 MARP_min <-function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)   
-  {
+{
   if (print_level>0){
     message(paste0("Moment Matching Estimation of TU_none model via LP optimization."))
   }
@@ -742,13 +743,12 @@ MARP_proj <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
   #
   return(ret)
 }
-
 #
 ################################################################################
 ########################            TU-rum model            ####################
 ################################################################################
 #
-buildModel_TU_rum = function(phi_xyk, n=NULL, m=NULL, arumsG, arumsH) {
+buildModel_TUrum = function(phi_xyk, n=NULL, m=NULL, arumsG, arumsH) {
   dims = dim(phi_xyk)
   nbX = dims[1]
   nbY = dims[2]
@@ -761,52 +761,49 @@ buildModel_TU_rum = function(phi_xyk, n=NULL, m=NULL, arumsG, arumsH) {
   }
   #
   dimTheta = dims[3]
-  ret = list(  phi_xyk = phi_xyk,
+  ret = list(  types = c("TUrum"),
+               phi_xyk = phi_xyk,
                dimTheta = dimTheta,                         
                nbX=nbX,
                nbY=nbY,
                n = n,
                m = m,
                arumsG=arumsG,
-               arumsH=arumsH)
+               arumsH=arumsH,
+               inittheta = inittheta_default,
+               dtheta_Psi = dtheta_Psi_TUrum,
+               dtheta_G = dtheta_G_default,
+               dtheta_H = dtheta_H_default,
+               mme = mme_TUrum,
+               parametricMarket = parametricMarket_TUrum)
   
-  class(ret) =   "TU_rum"
+  class(ret) =   "DSE_model"
   return(ret)
   
 }
 #
-parametricMarket.TU_rum <- function(model, theta)
+parametricMarket_TUrum <- function(model, theta)
 {
   phi_xy_vec = matrix(model$phi_xyk,ncol = model$dimTheta) %*% theta
   phi_xy_mat = matrix(phi_xy_vec,model$nbX,model$nbY)
   return(  build_market_TU_general(model$n,model$m,phi_xy_mat,model$arumsG,model$arumsH))
 }
 #
-dtheta_Psi.TU_rum  <- function(model,deltaparams=diag(model$dimTheta))
+dtheta_Psi_TUrum  <- function(model,deltatheta=diag(model$dimTheta))
 {
-  return( matrix(model$phi_xyk,ncol = model$dimTheta) %*% deltaparams)
+  return( matrix(model$phi_xyk,ncol = model$dimTheta) %*% deltatheta)
 }
 #
-dtheta_G.TU_rum  <- function(model,deltaparams=diag(model$dimTheta))
-{
-  return(matrix(0,nrow=0,ncol=dim(deltaparams)[2])) 
-}
-#
-dtheta_H.TU_rum  <- function(model,deltaparams=diag(model$dimTheta))
-{
-  return(matrix(0,nrow=0,ncol=dim(deltaparams)[2])) 
-}
-#
-mme.TU_rum <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
+mme_TUrum <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_level=0)
 {
   if (print_level>0){
     message(paste0("Moment Matching Estimation of TU_rum model via optimization."))
   }
 
-  theta0 = inittheta(model)$theta
-  market = parametricMarket(model,theta0)
+  theta0 = model$inittheta(model)$theta
+  market = model$parametricMarket(model,theta0)
   
-  kron = dtheta_Psi(model)
+  kron = model$dtheta_Psi(model)
   Chat = c(c(muhat) %*% kron)
   #
   if (print_level>0){

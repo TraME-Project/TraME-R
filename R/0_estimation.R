@@ -18,14 +18,32 @@
 ##   along with TraME. If not, see <http://www.gnu.org/licenses/>.
 ##
 ################################################################################
-
-dtheta_mu_default <- function(model, market, theta, deltatheta=diag(length(theta)))
-{
+#
+dtheta_mu.DSE_model <- function(model, theta, deltatheta=diag(length(theta)))
+{ 
+  
+  market = model$parametricMarket(model,theta)
+  ### eventually, this will have to go
+  ### ---------------- from here ------------------->>>>>>
+  check_1 = (class(market$arumsG)=="logit") 
+  check_2 = (class(market$arumsH)=="logit")
+  check_3 = (market$arumsG$sigma == market$arumsH$sigma)
+  if(check_1 && check_2 && check_3){
+    ret = dtheta_mu_logit(model,market,theta,deltatheta)
+    warning("Models of class DSE_model involve a market of type ITU-logit. This is inefficient and should be programmed using a market of type MFE.")
+    return(ret)
+  }
+  ### <<<<<<---------- to here ---------------------------
+  #
   outcome = solveEquilibrium(market,notifications=FALSE)
   #
   mu = outcome$mu
   mux0s = market$n-apply(mu,1,sum)
   mu0ys = market$m-apply(mu,2,sum)
+  # 
+  dtheta_Psi = model$dtheta_Psi
+  dtheta_G = model$dtheta_G
+  dtheta_H = model$dtheta_H
   
   U = outcome$U
   V = outcome$V
@@ -65,10 +83,73 @@ dtheta_mu_default <- function(model, market, theta, deltatheta=diag(length(theta
   return(list(mu= c(mu),mux0s=mux0s, mu0ys=mu0ys,dmu=dmu))
 }
 #
-dtheta_mu_mfe <- function(model, market, theta, deltatheta=diag(length(theta)))
+dtheta_mu_logit <- function(model, market, theta, deltatheta=diag(length(theta)))
+  ### this function is for the models of class DSE_model involve a market of 
+  ### type ITU-logit. This is inefficient and should not be encouraged; therefore
+  ### this function will have to go once the corresponding models are rewritten.
 {
+  dtheta_Psi = model$dtheta_Psi
+  deltatheta = matrix(deltatheta , nrow = length(theta))
+  rangeTheta = dim(deltatheta)[2]
+  sigma = market$arumsG$sigma
+  
+  deltaparamsPsi = dtheta_Psi(model, deltatheta)
+  tr = market$transfers
+  #
+  outcome = solveEquilibrium(market,notifications=FALSE,debugmode=FALSE)
+  #
+  mu = outcome$mu
+  mux0s = outcome$mux0
+  mu0ys = outcome$mu0y
+  #
+  us = matrix(outcome$u,nrow=tr$nbX,ncol=tr$nbY)
+  vs = matrix(outcome$v,nrow=tr$nbX,ncol=tr$nbY,byrow=T)
+  
+  du_psis = du_Psi(tr,us,vs)
+  dv_psis = 1 - du_psis
+  #
+  deltaPsis = matrix(dparams_Psi(tr,us,vs,deltaparamsPsi),nrow=tr$nbX*tr$nbY)
+  mudeltaPsi = array(c(mu)*c(deltaPsis),dim=c(tr$nbX,tr$nbY,rangeTheta))
+  
+  d_1 = apply(mudeltaPsi, c(1,3), sum) / sigma
+  d_2 = apply(mudeltaPsi, c(2,3), sum) / sigma
+  num = rbind(d_1,d_2)
+  #
+  Delta11 = diag(mux0s + apply(mu*du_psis,1,sum),nrow=tr$nbX)
+  Delta22 = diag(mu0ys + apply(mu*dv_psis,2,sum),nrow=tr$nbY)
+  Delta12 = mu * dv_psis
+  Delta21 = t(mu * du_psis)
+  Delta = rbind(cbind(Delta11,Delta12),cbind(Delta21,Delta22))
+  #
+  dlogmusingles = solve(Delta,num)
+  dlogmux0 = dlogmusingles[1:tr$nbX,,drop=FALSE]
+  dlogmu0y = dlogmusingles[(tr$nbX+1):(tr$nbX+tr$nbY),,drop=FALSE]
+  dlogmux0full = array(0,dim=c(tr$nbX,tr$nbY,rangeTheta))
+  dlogmu0yfull = array(0,dim=c(tr$nbX,tr$nbY,rangeTheta))
+  #
+  for(y in 1:tr$nbY){
+    dlogmux0full[,y,] = dlogmux0
+  }
+  for(x in 1:tr$nbX){
+    dlogmu0yfull[x,,] = dlogmu0y
+  }
+  #
+  dlogmu = c(du_psis)*matrix(dlogmux0full, ncol=rangeTheta) +
+    c(dv_psis)*matrix(dlogmu0yfull, ncol=rangeTheta) -
+    matrix(deltaPsis,ncol=rangeTheta) / sigma
+  dmu    = c(mu) * dlogmu
+  #
+  return(list(mu = c(mu), mux0s = mux0s, mu0ys = mu0ys, dmu = dmu))
+}
+#
+#
+dtheta_mu.MFE_model <- function(model, theta, deltatheta=diag(length(theta)))
+{
+  market = model$parametricMarket(model,theta)
   nbX = length(market$n)
   nbY = length(market$m)
+  dtheta_M = model$dtheta_M
+  #
   deltatheta = matrix(deltatheta , nrow = length(theta))
   rangeTheta = dim(deltatheta)[2]
   deltaparamsM = dtheta_M(model, deltatheta)
@@ -122,105 +203,11 @@ dtheta_mu_mfe <- function(model, market, theta, deltatheta=diag(length(theta)))
     return(list(mu = c(mu), mux0s = mux0s, mu0ys = mu0ys, dmu = dmu))
   
 }
+#
+#
+#
 
-dtheta_mu_logit <- function(model, market, theta, deltatheta=diag(length(theta)))
-{
-  deltatheta = matrix(deltatheta , nrow = length(theta))
-  rangeTheta = dim(deltatheta)[2]
-  sigma = market$arumsG$sigma
-
-  deltaparamsPsi = dtheta_Psi(model, deltatheta)
-  tr = market$transfers
-  #
-  outcome = solveEquilibrium(market,notifications=FALSE,debugmode=FALSE)
-  #
-  mu = outcome$mu
-  mux0s = outcome$mux0
-  mu0ys = outcome$mu0y
-  #
-  us = matrix(outcome$u,nrow=tr$nbX,ncol=tr$nbY)
-  vs = matrix(outcome$v,nrow=tr$nbX,ncol=tr$nbY,byrow=T)
-
-  du_psis = du_Psi(tr,us,vs)
-  dv_psis = 1 - du_psis
-  #
-  deltaPsis = matrix(dparams_Psi(tr,us,vs,deltaparamsPsi),nrow=tr$nbX*tr$nbY)
-  mudeltaPsi = array(c(mu)*c(deltaPsis),dim=c(tr$nbX,tr$nbY,rangeTheta))
-
-  d_1 = apply(mudeltaPsi, c(1,3), sum) / sigma
-  d_2 = apply(mudeltaPsi, c(2,3), sum) / sigma
-  num = rbind(d_1,d_2)
-  #
-  Delta11 = diag(mux0s + apply(mu*du_psis,1,sum),nrow=tr$nbX)
-  Delta22 = diag(mu0ys + apply(mu*dv_psis,2,sum),nrow=tr$nbY)
-  Delta12 = mu * dv_psis
-  Delta21 = t(mu * du_psis)
-  Delta = rbind(cbind(Delta11,Delta12),cbind(Delta21,Delta22))
-  #
-  dlogmusingles = solve(Delta,num)
-  dlogmux0 = dlogmusingles[1:tr$nbX,,drop=FALSE]
-  dlogmu0y = dlogmusingles[(tr$nbX+1):(tr$nbX+tr$nbY),,drop=FALSE]
-  dlogmux0full = array(0,dim=c(tr$nbX,tr$nbY,rangeTheta))
-  dlogmu0yfull = array(0,dim=c(tr$nbX,tr$nbY,rangeTheta))
-  #
-  for(y in 1:tr$nbY){
-    dlogmux0full[,y,] = dlogmux0
-  }
-  for(x in 1:tr$nbX){
-    dlogmu0yfull[x,,] = dlogmu0y
-  }
-  #
-  dlogmu = c(du_psis)*matrix(dlogmux0full, ncol=rangeTheta) +
-    c(dv_psis)*matrix(dlogmu0yfull, ncol=rangeTheta) -
-    matrix(deltaPsis,ncol=rangeTheta) / sigma
-  dmu    = c(mu) * dlogmu
-  #
-  return(list(mu = c(mu), mux0s = mux0s, mu0ys = mu0ys, dmu = dmu))
-}
-
-dtheta_mu_numeric <- function (model, market, theta, deltatheta=diag(length(theta)))
-{ 
-  thef <- function(thetheta){
-    ret = solveEquilibrium(parametricMarket(model,thetheta),notifications=FALSE)$mu
-    return(ret)
-  }
-  #
-  outcome = solveEquilibrium( parametricMarket(model,theta),notifications=FALSE)
-  #
-  mu=outcome$mu
-  mux0s = outcome$mux0
-  mu0ys = outcome$mu0y
-  #
-  dmu = jacobian(thef,theta) %*% deltatheta
-  #
-  return(list(mu = c(mu), mux0s = mux0s, mu0ys = mu0ys, dmu = dmu))
-}
-
-dtheta_mu <- function(model, theta, deltatheta=diag(length(theta)))
-{
-  market = parametricMarket(model,theta)
-  #
-  ret <- 0
-  if (class(market)=="MFE")
-  {  ret = dtheta_mu_mfe(model,market,theta,deltatheta)}
-  else
-  {
-    check_1 = (class(market$arumsG)=="logit")
-    check_2 = (class(market$arumsH)=="logit")
-    check_3 = (market$arumsG$sigma == market$arumsH$sigma)
-    if(check_1 && check_2 && check_3){
-      ret = dtheta_mu_logit(model,market,theta,deltatheta)
-    }else{
-      ret = dtheta_mu_default(model,market,theta,deltatheta)
-    }
-  }
-  #
-  return(ret)
-}
-
-mLogLikelihood <- function(theta, model, muhat, muhatx0, muhat0y, scale=1, byIndiv=T) UseMethod("mLogLikelihood", model)
-
-mLogLikelihood.default <- function(theta, model, muhat, muhatx0, muhat0y, scale=1, byIndiv=T) # to be modified
+mLogLikelihood <- function(theta, model, muhat, muhatx0, muhat0y, scale=1, byIndiv=T) # to be modified
 {
   mudmu = try( dtheta_mu(model,theta),silent=T)
   #
@@ -249,7 +236,6 @@ mLogLikelihood.default <- function(theta, model, muhat, muhatx0, muhat0y, scale=
       mGradLL = mGradLL - term_3
       
     }
-
     #
     ret = list(objective = mLL / scale, gradient = mGradLL / scale)
   }else{
@@ -261,6 +247,7 @@ mLogLikelihood.default <- function(theta, model, muhat, muhatx0, muhat0y, scale=
 
 mle <- function(model, muhat, theta0=NULL, xtol_rel=1e-8, maxeval=1e5, print_level=0, byIndiv=T)
 {
+  inittheta = model$inittheta
   nbX = length(model$n)
   nbY = length(model$m)
   scale = max(sum(model$n),sum(model$n))
@@ -307,7 +294,6 @@ mle <- function(model, muhat, theta0=NULL, xtol_rel=1e-8, maxeval=1e5, print_lev
 plotCovariogram2D = function(model,lambda,muhat = NULL, dim1=1,dim2=2,nbSteps =100)
 {
   # HERE, INSERT FILTER TO APPLY ONLY TO TU MODELS W LINEAR PARAMETERIZATION
-  
   library(gplots)
   points = matrix(0,nbSteps,2)
   for (i in (1:nbSteps))
@@ -316,7 +302,7 @@ plotCovariogram2D = function(model,lambda,muhat = NULL, dim1=1,dim2=2,nbSteps =1
     lambdastar = lambda
     lambdastar[dim1]=lambda[dim1]*cos(angle) - lambda[dim2]*sin(angle) 
     lambdastar[dim2]=lambda[dim1]*sin(angle) + lambda[dim2]*cos(angle) 
-    market = parametricMarket(model,lambdastar)
+    market = model$parametricMarket(model,lambdastar)
     mustar = solveEquilibrium(market)$mu
     points[i,] =  c(c(mustar) %*% matrix(phi_xyk, ncol=model$dimTheta) ) [c(dim1,dim2)]
     
