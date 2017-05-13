@@ -28,15 +28,6 @@ inittheta_default <- function(model)
              lb = NULL, ub = NULL)
 }
 #
-dtheta_G_default <- function(model, deltatheta=diag(model$dimTheta))
-{
-  return( matrix(0,nrow=0,ncol=dim(deltatheta)[2]) )
-}
-#
-dtheta_H_default <- function(model, deltatheta=diag(model$dimTheta))
-{
-  return( matrix(0,nrow=0,ncol=dim(deltatheta)[2]) )
-}
 ################################################################################
 ########################       affinity model            #######################
 ################################################################################
@@ -66,7 +57,6 @@ buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1 )
              dX=dX, dY=dY,
              nbX = nbX, nbY = nbY,
              n=n, m=m,
-             sigma = sigma,
              neededNorm = neededNorm,
              phi_xyk_aux = kronecker(Yvals,Xvals),
              Phi_xyk = function(model) 
@@ -76,20 +66,21 @@ buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1 )
              Phi_k = function(model, muhat) 
                (c(c(muhat) %*% array(model$phi_xyk_aux,dim=c(model$nbX*model$nbY,model$dimTheta)))),
              inittheta = inittheta_default,
-             dtheta_Psi = dtheta_Psi_affinity,
-             dtheta_G = dtheta_G_default,
-             dtheta_H = dtheta_H_default,
+            # dtheta_Psi = dtheta_Psi_affinity,
+            dtheta_M = dtheta_M_affinity,
+            # dtheta_G = dtheta_G_default,
+            # dtheta_H = dtheta_H_default,
              mme = mme_affinity,
              parametricMarket = parametricMarket_affinity
   )
   
-  class(ret) = "DSE_model"
+  class(ret) = "MFE_model"
   #
   return(ret)
 }
 #
-dtheta_Psi_affinity <- function(model, deltatheta=diag(model$dimTheta))
-  (return(model$Phi_xy(model, deltatheta)))
+dtheta_M_affinity <- function(model, theta, deltatheta=diag(model$dimTheta))
+  (return(theta * model$Phi_xy(model, deltatheta) /2 ))
 #
 #
 mmeaffinityNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
@@ -282,9 +273,9 @@ mme_affinity <- function(model, muhat, lambda = NULL, xtol_rel=1e-4, maxeval=1e5
 }
 #
 parametricMarket_affinity <- function(model, theta) 
-  (build_market_TU_logit(model$n,model$m,
-                         matrix(model$Phi_xy(model,c(theta)), nrow=model$nbX),
-                         sigma=model$sigma,neededNorm=model$neededNorm))
+  (build_market_geoMFE(model$n,model$m,
+                       exp(  matrix(model$Phi_xy(model,c(theta)), nrow=model$nbX)/2), 
+                       neededNorm=model$neededNorm))
 
 #
 ################################################################################
@@ -336,7 +327,7 @@ parametricMarket_TUlogit<- function(model, theta)
                                 neededNorm=model$neededNorm) )
 }
 #
-dtheta_Psi_TUlogit <- function(model, deltatheta=diag(model$dimTheta))
+dtheta_Psi_TUlogit <- function(model, theta = NULL, deltatheta=diag(model$dimTheta))
 {
   return( matrix(model$phi_xyk,ncol = model$dimTheta) %*% deltatheta )
 }
@@ -469,7 +460,7 @@ parametricMarket_ETUlogit <- function(model, theta)
   return(ret)
 }
 
-dtheta_Psi_ETUlogit <- function(model, deltatheta=diag(model$dimTheta))
+dtheta_Psi_ETUlogit <- function(model, theta = NULL, deltatheta=diag(model$dimTheta))
   # params is simply the affinity matrix
 {
   zero1 = matrix(0,model$nbX*model$nbY,model$dX)
@@ -541,7 +532,7 @@ parametricMarket_TUempirical <- function(model, theta)
   return(  build_market_TU_general(model$n,model$m,phi_xy_mat,model$arumsG,model$arumsH))
 }
 #
-dtheta_Psi_TUempirical  <- function(model,deltatheta=diag(model$dimTheta))
+dtheta_Psi_TUempirical  <- function(model,theta = NULL, deltatheta=diag(model$dimTheta))
 {
   return(matrix(model$phi_xyk,ncol = model$dimTheta) %*% deltatheta) 
 }
@@ -650,7 +641,7 @@ parametricMarket_TUnone<- function(model, theta)
   return( build_market_TU_none(model$n,model$m,phi_xy_mat) )
 }
 #
-dtheta_Psi_TUnone  <- function(model,deltatheta=diag(model$dimTheta))
+dtheta_Psi_TUnone  <- function(model, theta = NULL, deltatheta=diag(model$dimTheta))
 {
   return( matrix(model$phi_xyk,ncol = model$dimTheta) %*% deltatheta)
 }
@@ -789,7 +780,7 @@ parametricMarket_TUrum <- function(model, theta)
   return(  build_market_TU_general(model$n,model$m,phi_xy_mat,model$arumsG,model$arumsH))
 }
 #
-dtheta_Psi_TUrum  <- function(model,deltatheta=diag(model$dimTheta))
+dtheta_Psi_TUrum  <- function(model,theta = NULL, deltatheta=diag(model$dimTheta))
 {
   return( matrix(model$phi_xyk,ncol = model$dimTheta) %*% deltatheta)
 }

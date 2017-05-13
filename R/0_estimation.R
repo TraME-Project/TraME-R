@@ -49,9 +49,9 @@ dtheta_mu.DSE_model <- function(model, theta, deltatheta=diag(length(theta)))
   V = outcome$V
   
 
-  deltaparamsPsi = dtheta_Psi(model, deltatheta)
-  deltaparamsG = dtheta_G(model, deltatheta)
-  deltaparamsH = dtheta_H(model, deltatheta)
+  deltaparamsPsi = dtheta_Psi(model, deltatheta=deltatheta)
+  deltaparamsG = dtheta_G(model, deltatheta=deltatheta)
+  deltaparamsH = dtheta_H(model, deltatheta=deltatheta)
   
   tr = market$transfers
   arumsG = market$arumsG
@@ -93,7 +93,7 @@ dtheta_mu_logit <- function(model, market, theta, deltatheta=diag(length(theta))
   rangeTheta = dim(deltatheta)[2]
   sigma = market$arumsG$sigma
   
-  deltaparamsPsi = dtheta_Psi(model, deltatheta)
+  deltaparamsPsi = dtheta_Psi(model, deltatheta=deltatheta)
   tr = market$transfers
   #
   outcome = solveEquilibrium(market,notifications=FALSE,debugmode=FALSE)
@@ -152,7 +152,7 @@ dtheta_mu.MFE_model <- function(model, theta, deltatheta=diag(length(theta)))
   #
   deltatheta = matrix(deltatheta , nrow = length(theta))
   rangeTheta = dim(deltatheta)[2]
-  deltaparamsM = dtheta_M(model, deltatheta)
+  deltaparamsM = dtheta_M(model, theta=theta, deltatheta=deltatheta)
   if (class( market) == "DSE")
   { mmfs = PsiToM(market$transfers, market$n,market$m,market$neededNorm ) }
   else
