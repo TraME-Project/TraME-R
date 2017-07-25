@@ -62,8 +62,8 @@ genericLP <- function(obj, A, modelsense, rhs, sense, Q=NULL, lb=NULL, ub=NULL, 
         if(result$status==0){
             solution = result$solution
             objval = result$optimum
-            pi = result$pi
-            rc = result$rc
+            pi = result$auxiliary$dual
+            rc = result$solution_dual
         }else{
             stop("optimization problem with GLPK")
         }
