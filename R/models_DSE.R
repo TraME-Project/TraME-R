@@ -327,14 +327,14 @@ mme_TUempirical <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, print_leve
   #
   # based on this, can compute aggregated equilibrium in LP 
   #
-  A_11 = kronecker(matrix(1,nbY,1),sparseMatrix(1:nbI,1:nbI,x=1))
+  A_11 = Matrix::kronecker(matrix(1,nbY,1),sparseMatrix(1:nbI,1:nbI,x=1))
   A_12 = sparseMatrix(i=NULL,j=NULL,dims=c(nbI*nbY,nbJ),x=0)
-  A_13 = kronecker(sparseMatrix(1:nbY,1:nbY,x=-1),I_ix)
+  A_13 = Matrix::kronecker(sparseMatrix(1:nbY,1:nbY,x=-1),I_ix)
   A_14 = sparseMatrix(i=NULL,j=NULL,dims=c(nbI*nbY,model$dimTheta),x=0)
   #
   A_21 = sparseMatrix(i=NULL,j=NULL,dims=c(nbX*nbJ,nbI),x=0)
-  A_22 = kronecker(sparseMatrix(1:nbJ,1:nbJ,x=1),matrix(1,nbX,1))
-  A_23 = kronecker(t(I_yj),sparseMatrix(1:nbX,1:nbX,x=1))
+  A_22 = Matrix::kronecker(sparseMatrix(1:nbJ,1:nbJ,x=1),matrix(1,nbX,1))
+  A_23 = Matrix::kronecker(t(I_yj),sparseMatrix(1:nbX,1:nbX,x=1))
   A_24 = -t(matrix(matrix(t(kron),model$dimTheta*nbX,nbY) %*% I_yj, model$dimTheta, nbX*nbJ))
   #
   A_1  = cbind(A_11,A_12,A_13, A_14)
