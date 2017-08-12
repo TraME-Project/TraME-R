@@ -57,6 +57,7 @@ buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1 )
              dX=dX, dY=dY,
              nbX = nbX, nbY = nbY,
              n=n, m=m,
+             sigma = sigma,
              neededNorm = neededNorm,
              phi_xyk_aux = kronecker(Yvals,Xvals),
              Phi_xyk = function(model)
@@ -266,7 +267,8 @@ mmeaffinityWithRegul <- function(model, muhat, lambda, xtol_rel=1e-4, maxeval=1e
 #
 mme_affinity <- function(model, muhat, lambda = NULL, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
 {
-  if (is.null(lambda))
+  if (is.null(lambda)) {lambda = 0}
+  if ( lambda == 0 )
   {return(mmeaffinityNoRegul(model,muhat, xtol_rel , maxeval , tolIpfp , maxiterIpfp , print_level))}
   else
   { return(mmeaffinityWithRegul(model,muhat, lambda, xtol_rel , maxeval , tolIpfp , maxiterIpfp , print_level)) }
