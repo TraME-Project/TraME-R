@@ -251,7 +251,8 @@ mle <- function(model, muhat, theta0=NULL, xtol_rel=1e-8, maxeval=1e5, print_lev
   nbX = length(model$n)
   nbY = length(model$m)
   scale = max(sum(model$n),sum(model$n))
-  dimTheta = length(model$dimTheta)
+  #dimTheta = length(model$dimTheta) #Keith: should this be model$dimTheta?
+  dimTheta = model$dimTheta
   if(print_level > 0){
     message(paste0("Maximum Likelihood Estimation of ",class(model)," model."))
   }

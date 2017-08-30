@@ -28,58 +28,72 @@
 
 solveEquilibrium.MFE <- function(market, xFirst=T, notifications=TRUE, debugmode=FALSE, tol=1e-12, bystart=market$m, method = "ipfp")
 {
-  if (method == "ipfp")
-  {return (ipfp(market, xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )}
-  if (method == "parIpfp")
-  {return (parIpfp(market, xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )}
-  if (method == "nodalNewton")
-  {return (nodalNewton(market, xFirst=xFirst, notifications=notifications, tol=tol) )}
-  #    
-  stop("Required method not available yet.")
+    if (method == "ipfp"){
+        return (ipfp(market, xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )
+    }
+    if (method == "parIpfp") {
+        return (parIpfp(market, xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )
+    }
+    if (method == "nodalNewton"){
+        return (nodalNewton(market, xFirst=xFirst, notifications=notifications, tol=tol) )
+    }
+    #
+    stop("Required method not available yet.")
 }
 
 solveEquilibrium.DSE <- function(market, xFirst=T, notifications=TRUE, debugmode=FALSE, tol=1e-12, bystart=market$m, method = "unspec")
 {
-  if (method == "unspec")
-  {
-    if (market$kind == "TU_none")
-    {method = "oapLP"}
-    if (market$kind == "TU_general")
-    {method = "maxWelfare"}
-    if (market$kind == "TU_empirical")
-    {method = "CupidsLP"}
-    if ( (market$kind == "NTU_none") | (market$kind == "NTU_general"))
-    {method = "darum"}
-    if (market$kind == "LTU_none")
-    { # not yet implemented
-    }
-    if (market$kind == "ITU_general")
-    {method = "jacobi"}
-    if ( (class(market$arumsG) == "logit") & (class(market$arumsH) == "logit") & (market$arumsG$sigma==1) & (market$arumsH$sigma==1) )
-    {
-      method = "ipfp_DSE"
-    }
+    if (method == "unspec") {
+        if (market$kind == "TU_none") {
+            method = "oapLP"
+        }
+        if (market$kind == "TU_general") {
+            method = "maxWelfare"
+        }
+        if (market$kind == "TU_empirical") {
+            method = "CupidsLP"
+        }
+        if ( (market$kind == "NTU_none") | (market$kind == "NTU_general")){
+            method = "darum"
+        }
+        if (market$kind == "LTU_none")
+        { # not yet implemented
+        }
+        if (market$kind == "ITU_general")
+        {
+            method = "jacobi"
+        }
+        if ( (class(market$arumsG) == "logit") & (class(market$arumsH) == "logit") & (market$arumsG$sigma==1) & (market$arumsH$sigma==1) ) 
+        {
+            method = "ipfp_DSE"
+        }
     
     #
-    if (method == "unspec")
-    { stop("Solver not known for this DSE market.")}
-  }
-  if (method == "oapLP")
-  {  return (oapLP(market, xFirst=xFirst, notifications=notifications) )}
-  if (method == "maxWelfare")
-  {  return (maxWelfare(market, xFirst=xFirst, notifications=notifications, tol_rel=tol) )}
-  if (method == "CupidsLP")
-  {  return (CupidsLP(market, xFirst=xFirst, notifications=notifications) )}
-  if (method == "darum")
-  {  return (darum(market, xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )}
-  if (method == "jacobi")
-  {  return (jacobi(market, xFirst=xFirst, notifications=notifications, tol=tol ) )}
-  if (method == "ipfp_DSE")
-  {  return (ipfp(DSEToMFE(market), xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )}
-  if (method == "nodalNewton_DSE")
-  {  return (nodalNewton(DSEToMFE(market), xFirst=xFirst, notifications=notifications, tol=tol) )}
-  
-  
+        if (method == "unspec") {
+            stop("Solver not known for this DSE market.")
+        }
+    }
+    if (method == "oapLP"){ 
+        return (oapLP(market, xFirst=xFirst, notifications=notifications) )
+    }
+    if (method == "maxWelfare") {
+        return (maxWelfare(market, xFirst=xFirst, notifications=notifications, tol_rel=tol) )
+    }
+    if (method == "CupidsLP") {
+        return (CupidsLP(market, xFirst=xFirst, notifications=notifications) )
+    }
+    if (method == "darum") {
+        return (darum(market, xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )
+    }
+    if (method == "jacobi") {
+        return (jacobi(market, xFirst=xFirst, notifications=notifications, tol=tol ) )
+    }
+    if (method == "ipfp_DSE") {
+        return (ipfp(DSEToMFE(market), xFirst=xFirst, notifications=notifications, debugmode=debugmode, tol=tol, bystart=bystart) )
+    }
+    if (method == "nodalNewton_DSE") {
+        return (nodalNewton(DSEToMFE(market), xFirst=xFirst, notifications=notifications, tol=tol) )
+    }
 }
 
 
