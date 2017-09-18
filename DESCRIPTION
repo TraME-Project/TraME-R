@@ -1,4 +1,4 @@
-Package: TraME
+Package: TraME.R
 Type: Package
 Title: Transportation Methods for Econometrics
 Version: 0.5.1
