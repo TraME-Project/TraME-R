@@ -58,7 +58,7 @@ simul.probit <- function(arums, nbDraws, seed=NULL)
         V = E$values 
         Q = E$vectors
         
-        SqrtCovar = Q%*%diag(1/sqrt(V))%*%t(Q) # Keith: benefit of this vs chol?
+        SqrtCovar = Q%*%diag(sqrt(V))%*%t(Q) # Keith: benefit of this vs chol?
         
         atoms[,,x] = matrix(rnorm(nbDraws*arums$aux_nbOptions),ncol=arums$aux_nbOptions) %*% SqrtCovar 
     }
