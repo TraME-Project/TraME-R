@@ -17,7 +17,7 @@ The quickest way to install TraME is via the devtools package.
 ```
 install.packages("devtools")
 library(devtools)
-install_github("TraME-Project/TraME-Classic")
+install_github("TraME-Project/TraME-R")
 ```
 The TraME test routines are invoked as follows:
 ```
