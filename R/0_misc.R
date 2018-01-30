@@ -64,7 +64,7 @@ inversePWA <- function(a, B, C, k=1.0)
     return(c(vals))
 }
 
-cdDB <- function()
+gdDB <- function()
 {
     info <- "."
 
@@ -85,7 +85,12 @@ cdDB <- function()
         info <- jsonlite::fromJSON(file.path(hme,'.dropbox','info.json'))
     }
 
-    setwd(info$personal$path)
+    return(info$personal$path)
+}
+
+cdDB <- function()
+{
+    setwd(gdDB())
 }
 
 # tests
