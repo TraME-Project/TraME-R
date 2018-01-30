@@ -85,7 +85,7 @@ cdDB <- function()
         info <- jsonlite::fromJSON(file.path(hme,'.dropbox','info.json'))
     }
 
-    return(info$personal$path)
+    setwd(info$personal$path)
 }
 
 # tests
