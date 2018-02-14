@@ -143,4 +143,27 @@ build_market_minMFE <- function(n, m, A, B, neededNorm=NULL)
   return(ret)
 }
 
-
+# general MFE markets
+build_market_MFE <- function(mmfs)
+{
+  neededNorm=mmfs$neededNorm
+  n=mmfs$n 
+  m=mmfs$m 
+  if(!is.null(neededNorm) && (sum(n) != sum(m))){
+    stop("Normalization asked but sum(n) does not coincide with sum(m)")
+  }
+  if(is.null(neededNorm)){
+    outsideOption = TRUE
+  }else{
+    outsideOption = FALSE
+  }
+  #
+  ret = list(kind = class(mmfs),
+             n=n,m=m,
+             neededNorm=neededNorm,
+             mmfs =mmfs
+  )
+  class(ret) = "MFE"
+  #
+  return(ret)
+}
