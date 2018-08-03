@@ -1,6 +1,6 @@
 ################################################################################
 ##
-##   Copyright (C) 2015 - 2016 Alfred Galichon
+##   Copyright (C) 2015 - 2018 Alfred Galichon
 ##
 ##   This file is part of the R package TraME.
 ##
