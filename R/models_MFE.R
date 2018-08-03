@@ -68,7 +68,7 @@ buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1 )
                (c(c(muhat) %*% array(model$phi_xyk_aux,dim=c(model$nbX*model$nbY,model$dimTheta)))),
              inittheta = inittheta_default,
             # dtheta_Psi = dtheta_Psi_affinity,
-            dtheta_M = dtheta_M_affinity,
+            dtheta_params = dtheta_params_affinity,
             # dtheta_G = dtheta_G_default,
             # dtheta_H = dtheta_H_default,
              mme = mme_affinity,
@@ -80,8 +80,8 @@ buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1 )
   return(ret)
 }
 #
-dtheta_M_affinity <- function(model, theta, deltatheta=diag(model$dimTheta))
-  (return(theta * model$Phi_xy(model, deltatheta) /2 ))
+dtheta_params_affinity <- function(model, theta, deltatheta=diag(model$dimTheta))
+  (return( exp(  matrix(model$Phi_xy(model,c(theta)), nrow=model$nbX)/2) * model$Phi_xy(model, deltatheta) /2 ))
 #
 #
 mmeaffinityNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)

@@ -83,84 +83,27 @@ dtheta_mu.DSE_model <- function(model, theta, deltatheta=diag(length(theta)))
   return(list(mu= c(mu),mux0s=mux0s, mu0ys=mu0ys,dmu=dmu))
 }
 #
-dtheta_mu_logit <- function(model, market, theta, deltatheta=diag(length(theta)))
-  ### this function is for the models of class DSE_model involve a market of 
-  ### type ITU-logit. This is inefficient and should not be encouraged; therefore
-  ### this function will have to go once the corresponding models are rewritten.
-{
-  dtheta_Psi = model$dtheta_Psi
-  deltatheta = matrix(deltatheta , nrow = length(theta))
-  rangeTheta = dim(deltatheta)[2]
-  sigma = market$arumsG$sigma
-  
-  deltaparamsPsi = dtheta_Psi(model, deltatheta=deltatheta)
-  tr = market$transfers
-  #
-  outcome = solveEquilibrium(market,notifications=FALSE,debugmode=FALSE)
-  #
-  mu = outcome$mu
-  mux0s = outcome$mux0
-  mu0ys = outcome$mu0y
-  #
-  us = matrix(outcome$u,nrow=tr$nbX,ncol=tr$nbY)
-  vs = matrix(outcome$v,nrow=tr$nbX,ncol=tr$nbY,byrow=T)
-  
-  du_psis = du_Psi(tr,us,vs)
-  dv_psis = 1 - du_psis
-  #
-  deltaPsis = matrix(dparams_Psi(tr,us,vs,deltaparamsPsi),nrow=tr$nbX*tr$nbY)
-  mudeltaPsi = array(c(mu)*c(deltaPsis),dim=c(tr$nbX,tr$nbY,rangeTheta))
-  
-  d_1 = apply(mudeltaPsi, c(1,3), sum) / sigma
-  d_2 = apply(mudeltaPsi, c(2,3), sum) / sigma
-  num = rbind(d_1,d_2)
-  #
-  Delta11 = diag(mux0s + apply(mu*du_psis,1,sum),nrow=tr$nbX)
-  Delta22 = diag(mu0ys + apply(mu*dv_psis,2,sum),nrow=tr$nbY)
-  Delta12 = mu * dv_psis
-  Delta21 = t(mu * du_psis)
-  Delta = rbind(cbind(Delta11,Delta12),cbind(Delta21,Delta22))
-  #
-  dlogmusingles = solve(Delta,num)
-  dlogmux0 = dlogmusingles[1:tr$nbX,,drop=FALSE]
-  dlogmu0y = dlogmusingles[(tr$nbX+1):(tr$nbX+tr$nbY),,drop=FALSE]
-  dlogmux0full = array(0,dim=c(tr$nbX,tr$nbY,rangeTheta))
-  dlogmu0yfull = array(0,dim=c(tr$nbX,tr$nbY,rangeTheta))
-  #
-  for(y in 1:tr$nbY){
-    dlogmux0full[,y,] = dlogmux0
-  }
-  for(x in 1:tr$nbX){
-    dlogmu0yfull[x,,] = dlogmu0y
-  }
-  #
-  dlogmu = c(du_psis)*matrix(dlogmux0full, ncol=rangeTheta) +
-    c(dv_psis)*matrix(dlogmu0yfull, ncol=rangeTheta) -
-    matrix(deltaPsis,ncol=rangeTheta) / sigma
-  dmu    = c(mu) * dlogmu
-  #
-  return(list(mu = c(mu), mux0s = mux0s, mu0ys = mu0ys, dmu = dmu))
-}
-#
 #
 dtheta_mu.MFE_model <- function(model, theta, deltatheta=diag(length(theta)))
 {
+    
   market = model$parametricMarket(model,theta)
+  if (class( market) != "MFE")
+  {
+    stop("MFE model does not involve a MFE market")
+  }
+  
   nbX = length(market$n)
   nbY = length(market$m)
-  dtheta_M = model$dtheta_M
+  dtheta_params = model$dtheta_params
   #
   deltatheta = matrix(deltatheta , nrow = length(theta))
   rangeTheta = dim(deltatheta)[2]
-  deltaparamsM = dtheta_M(model, theta=theta, deltatheta=deltatheta)
-  if (class( market) == "DSE")
-  { mmfs = PsiToM(market$transfers, market$n,market$m,market$neededNorm ) }
-  else
-  {
-    if (class( market) == "MFE")
-    {mmfs = market$mmfs}
-    else (stop("Class of market not supported."))
-  }
+  deltaparamsM = (model, theta=theta, deltatheta=deltatheta)
+  
+  
+  mmfs = market$mmfs
+
   outcome = solveEquilibrium(market,notifications=FALSE,debugmode=FALSE)
   mu = outcome$mu
   mux0s = outcome$mux0
