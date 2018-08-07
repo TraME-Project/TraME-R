@@ -99,7 +99,7 @@ dtheta_mu.MFE_model <- function(model, theta, deltatheta=diag(length(theta)))
   #
   deltatheta = matrix(deltatheta , nrow = length(theta))
   rangeTheta = dim(deltatheta)[2]
-  deltaparamsM = (model, theta=theta, deltatheta=deltatheta)
+  deltaparamsM = dtheta_params(model, theta=theta, deltatheta=deltatheta)
   
   
   mmfs = market$mmfs

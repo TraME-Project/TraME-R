@@ -33,7 +33,7 @@ inittheta_default <- function(model)
 ################################################################################
 #
 #
-buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1 )
+buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1, noSingles=TRUE )
 {
   nbX = dim(Xvals)[1]
   nbY = dim(Yvals)[1]
@@ -48,9 +48,9 @@ buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1 )
     m = rep(1,nbY)
   }
   #
-  if ( sum(n) != sum(m) ) {stop("Unequal mass of individuals in an affinity model.")}
+  if ( noSingles & (sum(n) != sum(m)) ) {stop("Unequal mass of individuals in an affinity model.")}
   #
-  neededNorm = defaultNorm(TRUE)
+  neededNorm = defaultNorm(noSingles)
   #
   ret = list(type = c("affinity"),
              dimTheta=dX*dY,
@@ -84,84 +84,83 @@ dtheta_params_affinity <- function(model, theta, deltatheta=diag(model$dimTheta)
   (return( exp(  matrix(model$Phi_xy(model,c(theta)), nrow=model$nbX)/2) * model$Phi_xy(model, deltatheta) /2 ))
 #
 #
-mmeaffinityNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
-  # mmeaffinityNoRegul should be improved as one should make use of the logit structure and use the ipfp
-{
-  #
-  if (print_level>0){
-    message(paste0("Moment Matching Estimation of Affinity model via IPFP+BFGS optimization."))
-  }
-  #
-  theta0 = model$inittheta(model)$theta
-  Chat = model$Phi_k(model, muhat)
-  nbX = model$nbX
-  nbY = model$nbY
-  dX = model$dX
-  dY = model$dY
-  dimTheta = model$dimTheta
-  sigma = model$sigma
-  #
-  totmass = sum(model$n) #+ sum(model$m)
-
-  if ( sum(model$n) != totmass ) {stop("Unequal mass of individuals in an affinity model.")}
-  if (sum(muhat) !=  totmass) {stop("Total number of couples does not coincide with margins.")}
-  p = model$n / totmass
-  q = model$m / totmass
-  IX=rep(1,nbX)
-  tIY=matrix(rep(1,nbY),nrow=1)
-  f = p %*% tIY
-  g = IX %*% t(q)
-  pihat = muhat / totmass
-  v=rep(0,nbY)
-  #
-  #
-  valuef = function(A)
-  {
-    Phi = matrix(model$Phi_xy(model,c(A)) ,nbX,nbY)
-    # Phi = Xvals %*% matrix(A,nrow=dX) %*% t(Yvals)
-    contIpfp = TRUE
-    iterIpfp = 0
-    while(contIpfp)
-    {
-      iterIpfp = iterIpfp+1
-      u = sigma*log(apply(g * exp( ( Phi - IX %*% t(v) ) / sigma ),1,sum))
-      vnext = sigma*log(apply(f * exp( ( Phi - u %*% tIY ) / sigma ),2,sum))
-      error = max(abs(apply(g * exp( ( Phi - IX %*% t(vnext) - u %*% tIY ) / sigma ),1,sum)-1))
-      if( (error<tolIpfp) | (iterIpfp >= maxiterIpfp)) {contIpfp=FALSE}
-      v=vnext
-    }
-    #print(c("Converged in ", iterIpfp, " iterations."))
-    pi = f * g * exp( ( Phi - IX %*% t(v) - u %*% tIY ) / model$sigma )
-    if (iterIpfp >= maxiterIpfp ) {stop('maximum number of iterations reached')}
-    v <<- vnext
-    #thegrad =  c(    c(pi - pihat) %*% phis)
-    thegrad = model$Phi_k(model,pi - pihat)
-    theval = sum(thegrad * c(A)) - sigma* sum(pi*log(pi))
-
-    return(list(objective = theval,gradient = thegrad))
-  }
-
-  A0 = rep(0,dX*dY)
-  resopt = nloptr(x0=A0,
-                  eval_f = valuef,
-                  opt = list(algorithm = 'NLOPT_LD_LBFGS',
-                             xtol_rel = xtol_rel,
-                             maxeval=maxeval,
-                             print_level = print_level))
-  #  AffinityMatrix = matrix(res$solution,nrow=dX)
-  if (resopt$status<0) {warning("nloptr convergence failed.")}
-  #
-  thetahat = resopt$solution
-  ret =list(thetahat=thetahat,
-            val=resopt$objective,
-            status = resopt$status)
-  #
-  return(ret)
-}
+# mmeaffinityNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
+#   # mmeaffinityNoRegul should be improved as one should make use of the logit structure and use the ipfp
+# {
+#   #
+#   if (print_level>0){
+#     message(paste0("Moment Matching Estimation of Affinity model via IPFP+BFGS optimization."))
+#   }
+#   #
+#   theta0 = model$inittheta(model)$theta
+#   Chat = model$Phi_k(model, muhat)
+#   nbX = model$nbX
+#   nbY = model$nbY
+#   dX = model$dX
+#   dY = model$dY
+#   dimTheta = model$dimTheta
+#   sigma = model$sigma
+#   #
+#   totmass = sum(model$n) #+ sum(model$m)
+# 
+#   if ( sum(model$n) != totmass ) {stop("Unequal mass of individuals in an affinity model.")}
+#   if (sum(muhat) !=  totmass) {stop("Total number of couples does not coincide with margins.")}
+#   p = model$n / totmass
+#   q = model$m / totmass
+#   IX=rep(1,nbX)
+#   tIY=matrix(rep(1,nbY),nrow=1)
+#   f = p %*% tIY
+#   g = IX %*% t(q)
+#   pihat = muhat / totmass
+#   v=rep(0,nbY)
+#   #
+#   #
+#   valuef = function(A)
+#   {
+#     Phi = matrix(model$Phi_xy(model,c(A)) ,nbX,nbY)
+#     # Phi = Xvals %*% matrix(A,nrow=dX) %*% t(Yvals)
+#     contIpfp = TRUE
+#     iterIpfp = 0
+#     while(contIpfp)
+#     {
+#       iterIpfp = iterIpfp+1
+#       u = sigma*log(apply(g * exp( ( Phi - IX %*% t(v) ) / sigma ),1,sum))
+#       vnext = sigma*log(apply(f * exp( ( Phi - u %*% tIY ) / sigma ),2,sum))
+#       error = max(abs(apply(g * exp( ( Phi - IX %*% t(vnext) - u %*% tIY ) / sigma ),1,sum)-1))
+#       if( (error<tolIpfp) | (iterIpfp >= maxiterIpfp)) {contIpfp=FALSE}
+#       v=vnext
+#     }
+#     #print(c("Converged in ", iterIpfp, " iterations."))
+#     pi = f * g * exp( ( Phi - IX %*% t(v) - u %*% tIY ) / model$sigma )
+#     if (iterIpfp >= maxiterIpfp ) {stop('maximum number of iterations reached')}
+#     v <<- vnext
+#     #thegrad =  c(    c(pi - pihat) %*% phis)
+#     thegrad = model$Phi_k(model,pi - pihat)
+#     theval = sum(thegrad * c(A)) - sigma* sum(pi*log(pi))
+# 
+#     return(list(objective = theval,gradient = thegrad))
+#   }
+# 
+#   A0 = rep(0,dX*dY)
+#   resopt = nloptr(x0=A0,
+#                   eval_f = valuef,
+#                   opt = list(algorithm = 'NLOPT_LD_LBFGS',
+#                              xtol_rel = xtol_rel,
+#                              maxeval=maxeval,
+#                              print_level = print_level))
+#   #  AffinityMatrix = matrix(res$solution,nrow=dX)
+#   if (resopt$status<0) {warning("nloptr convergence failed.")}
+#   #
+#   thetahat = resopt$solution
+#   ret =list(thetahat=thetahat,
+#             val=resopt$objective,
+#             status = resopt$status)
+#   #
+#   return(ret)
+# }
 #
 #
-mmeaffinityNoRegulBis <- function(model, muhat_xy, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
-  # mmeaffinityNoRegul should be improved as one should make use of the logit structure and use the ipfp
+mmeaffinityNoRegul <- function(model, muhat_xy, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
 {
   #
   if (print_level>0){
@@ -187,7 +186,7 @@ mmeaffinityNoRegulBis <- function(model, muhat_xy, xtol_rel=1e-4, maxeval=1e5, t
   g = IX %*% t(q)
   pihat = muhat / totmass
   v=rep(0,nbY)
-  withSingles = ifelse(is.null(neededNorm),1,0)
+  withSingles = ifelse(is.null(model$neededNorm),1,0)
   pihatPhi_k = model$Phi_k(model, pihat)
   
   #
@@ -207,16 +206,16 @@ mmeaffinityNoRegulBis <- function(model, muhat_xy, xtol_rel=1e-4, maxeval=1e5, t
     
     theval = sum( p * u) + sum(q * v) + 2*sigma*sum_piA_xy + sigma*withSingles*sum_piA_x0 + sigma*withSingles*sum_piA_0y - sum(pihatPhi_k * c(A))
      
-    grad_u_x = p - apply(piA_xy, MARGIN = 1, FUN = sum) -delta * exp( -u / sigma ) 
-    grad_v_y = q - apply(piA_xy, MARGIN = 2, FUN = sum) -delta * exp( -v / sigma ) 
+    grad_u_x = p - apply(piA_xy, MARGIN = 1, FUN = sum) - withSingles * exp( -u / sigma ) 
+    grad_v_y = q - apply(piA_xy, MARGIN = 2, FUN = sum) - withSingles * exp( -v / sigma ) 
     grad_A = model$Phi_k(model, piA_xy) - pihatPhi_k
     
     thegrad = c(grad_u_x,grad_v_y,grad_A)
     return(list(objective = theval,gradient = thegrad))
   }
   
-  A0 = rep(0,dX*dY)
-  resopt = nloptr(x0=A0,
+  x0 = c(rep(0,nbX+nbY),theta0)
+  resopt = nloptr(x0 = x0,
                   eval_f = valuef,
                   opt = list(algorithm = 'NLOPT_LD_LBFGS',
                              xtol_rel = xtol_rel,
@@ -225,7 +224,7 @@ mmeaffinityNoRegulBis <- function(model, muhat_xy, xtol_rel=1e-4, maxeval=1e5, t
   #  AffinityMatrix = matrix(res$solution,nrow=dX)
   if (resopt$status<0) {warning("nloptr convergence failed.")}
   #
-  thetahat = resopt$solution
+  thetahat = resopt$solution[(nbX+nbY+1):(nbX+nbY+dX*dY)]
   ret =list(thetahat=thetahat,
             val=resopt$objective,
             status = resopt$status)
