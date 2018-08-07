@@ -101,7 +101,7 @@ mmeaffinityNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp
   dimTheta = model$dimTheta
   sigma = model$sigma
   #
-  totmass = sum(model$n)
+  totmass = sum(model$n) #+ sum(model$m)
 
   if ( sum(model$n) != totmass ) {stop("Unequal mass of individuals in an affinity model.")}
   if (sum(muhat) !=  totmass) {stop("Total number of couples does not coincide with margins.")}
@@ -141,6 +141,80 @@ mmeaffinityNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp
     return(list(objective = theval,gradient = thegrad))
   }
 
+  A0 = rep(0,dX*dY)
+  resopt = nloptr(x0=A0,
+                  eval_f = valuef,
+                  opt = list(algorithm = 'NLOPT_LD_LBFGS',
+                             xtol_rel = xtol_rel,
+                             maxeval=maxeval,
+                             print_level = print_level))
+  #  AffinityMatrix = matrix(res$solution,nrow=dX)
+  if (resopt$status<0) {warning("nloptr convergence failed.")}
+  #
+  thetahat = resopt$solution
+  ret =list(thetahat=thetahat,
+            val=resopt$objective,
+            status = resopt$status)
+  #
+  return(ret)
+}
+#
+#
+mmeaffinityNoRegulBis <- function(model, muhat_xy, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
+  # mmeaffinityNoRegul should be improved as one should make use of the logit structure and use the ipfp
+{
+  #
+  if (print_level>0){
+    message(paste0("Moment Matching Estimation of Affinity model via IPFP+BFGS optimization."))
+  }
+  #
+  theta0 = model$inittheta(model)$theta
+  Chat = model$Phi_k(model, muhat)
+  nbX = model$nbX
+  nbY = model$nbY
+  dX = model$dX
+  dY = model$dY
+  dimTheta = model$dimTheta
+  sigma = model$sigma
+  #
+  totmass = sum(model$n) + sum(model$m)
+  
+  p = model$n / totmass
+  q = model$m / totmass
+  IX=rep(1,nbX)
+  tIY=matrix(rep(1,nbY),nrow=1)
+  f = p %*% tIY
+  g = IX %*% t(q)
+  pihat = muhat / totmass
+  v=rep(0,nbY)
+  withSingles = ifelse(is.null(neededNorm),1,0)
+  pihatPhi_k = model$Phi_k(model, pihat)
+  
+  #
+  #
+  valuef = function(args)
+  {
+    u = args[1:nbX]
+    v = args[(nbX+1):(nbX+nbY)]
+    A = matrix(args[(nbX+nbY+1):(nbX+nbY+dX*dY)],dX,dY)
+    
+    Phi = matrix(model$Phi_xy(model,c(A)) ,nbX,nbY)
+    
+    piA_xy = exp( (Phi - u - matrix(v,nbX,nbY,byrow=T) )/ (2*sigma) )
+    sum_piA_xy = sum( piA_xy )
+    sum_piA_x0 = sum( exp( -u / sigma ) ) 
+    sum_piA_0y = sum( exp( -v / sigma ) )
+    
+    theval = sum( p * u) + sum(q * v) + 2*sigma*sum_piA_xy + sigma*withSingles*sum_piA_x0 + sigma*withSingles*sum_piA_0y - sum(pihatPhi_k * c(A))
+     
+    grad_u_x = p - apply(piA_xy, MARGIN = 1, FUN = sum) -delta * exp( -u / sigma ) 
+    grad_v_y = q - apply(piA_xy, MARGIN = 2, FUN = sum) -delta * exp( -v / sigma ) 
+    grad_A = model$Phi_k(model, piA_xy) - pihatPhi_k
+    
+    thegrad = c(grad_u_x,grad_v_y,grad_A)
+    return(list(objective = theval,gradient = thegrad))
+  }
+  
   A0 = rep(0,dX*dY)
   resopt = nloptr(x0=A0,
                   eval_f = valuef,
