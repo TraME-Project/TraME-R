@@ -116,8 +116,8 @@ dtheta_mu.MFE_model <- function(model, theta, deltatheta=diag(length(theta)))
   
   deltaMs_array = array(deltaMs ,dim=c(nbX,nbY,rangeTheta))
   
-  d_1 = apply(deltaMs_array, c(1,3), sum) / sigma
-  d_2 = apply(deltaMs_array, c(2,3), sum) / sigma
+  d_1 = apply(deltaMs_array, c(1,3), sum) / model$sigma
+  d_2 = apply(deltaMs_array, c(2,3), sum) / model$sigma
   num =  - rbind(d_1,d_2)
   
   Delta11 = diag(1 + apply(du_Ms,1,sum),nrow=nbX)
