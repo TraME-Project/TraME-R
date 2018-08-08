@@ -86,7 +86,7 @@ dtheta_mu.DSE_model <- function(model, theta, deltatheta=diag(length(theta)))
 #
 dtheta_mu.MFE_model <- function(model, theta, deltatheta=diag(length(theta)))
 {
-    
+  
   market = model$parametricMarket(model,theta)
   if (class( market) != "MFE")
   {
@@ -103,7 +103,7 @@ dtheta_mu.MFE_model <- function(model, theta, deltatheta=diag(length(theta)))
   
   
   mmfs = market$mmfs
-
+  
   outcome = solveEquilibrium(market,notifications=FALSE,debugmode=FALSE)
   mu = outcome$mu
   mux0s = outcome$mux0
