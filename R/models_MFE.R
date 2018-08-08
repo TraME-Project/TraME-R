@@ -81,7 +81,8 @@ buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1, noSingl
 }
 #
 dtheta_params_affinity <- function(model, theta, deltatheta=diag(model$dimTheta))
-  (return( exp(  matrix(model$Phi_xy(model,c(theta)), nrow=model$nbX)/2) * model$Phi_xy(model, deltatheta) /2 ))
+  (return( exp(  matrix(rep(model$Phi_xy(model,c(theta))/2,length(theta)), ncol=length(theta))) * model$Phi_xy(model, deltatheta) /2 ))
+
 #
 #
 # mmeaffinityNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
@@ -160,7 +161,7 @@ dtheta_params_affinity <- function(model, theta, deltatheta=diag(model$dimTheta)
 # }
 #
 #
-mmeaffinityNoRegul <- function(model, muhat_xy, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
+mmeaffinityNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
 {
   #
   if (print_level>0){
@@ -168,7 +169,6 @@ mmeaffinityNoRegul <- function(model, muhat_xy, xtol_rel=1e-4, maxeval=1e5, tolI
   }
   #
   theta0 = model$inittheta(model)$theta
-  Chat = model$Phi_k(model, muhat)
   nbX = model$nbX
   nbY = model$nbY
   dX = model$dX

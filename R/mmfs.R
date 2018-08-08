@@ -155,10 +155,11 @@ dparams_M.geommfs <- function (mmfs,mux0s,mu0ys,deltaparamsM=NULL)
   if(is.null(deltaparamsM)){
     ret = Diagonal(sqrt(mux0s %*% t(mu0ys)),n=mmfs$nbX*mmfs$nbY)
   }else{
-    ret = c(matrix(deltaparamsM,nrow = nbX) * sqrt(mux0s %*% t(mu0ys)) )
+    ret = Diagonal(x=c(sqrt(mux0s %*% t(mu0ys))))%*%deltaparamsM
   }
   return(ret)
 }
+
 #
 margxInv.geommfs <- function(xs, mmfs, theMu0ys)
 {

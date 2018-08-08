@@ -112,16 +112,16 @@ dtheta_mu.MFE_model <- function(model, theta, deltatheta=diag(length(theta)))
   du_Ms = matrix(dmux0s_M(mmfs,mux0s,mu0ys),nrow=nbX)
   dv_Ms = matrix(dmu0ys_M(mmfs,mux0s,mu0ys),nrow=nbX)
   # 
-  deltaMs = matrix(dparams_M(mmfs,mux0s,mu0ys,deltaparamsM),nrow=tr$nbX*tr$nbY)
-
-  deltaMs_array = array(deltaMs ,dim=c(tr$nbX,tr$nbY,rangeTheta))
+  deltaMs = matrix(dparams_M(mmfs,mux0s,mu0ys,deltaparamsM),nrow=nbX*nbY)
+  
+  deltaMs_array = array(deltaMs ,dim=c(nbX,nbY,rangeTheta))
   
   d_1 = apply(deltaMs_array, c(1,3), sum) / sigma
   d_2 = apply(deltaMs_array, c(2,3), sum) / sigma
   num =  - rbind(d_1,d_2)
   
-  Delta11 = diag(1 + apply(du_Ms,1,sum),nrow=tr$nbX)
-  Delta22 = diag(1 + apply(dv_Ms,2,sum),nrow=tr$nbY)
+  Delta11 = diag(1 + apply(du_Ms,1,sum),nrow=nbX)
+  Delta22 = diag(1 + apply(dv_Ms,2,sum),nrow=nbY)
   Delta12 = dv_Ms
   Delta21 = t(du_Ms)
   Delta = rbind(cbind(Delta11,Delta12),cbind(Delta21,Delta22))
@@ -129,9 +129,9 @@ dtheta_mu.MFE_model <- function(model, theta, deltatheta=diag(length(theta)))
   dmusingles = solve(Delta,num)
   dmux0 = dmusingles[1:nbX,,drop=FALSE]
   dmu0y = dmusingles[(nbX+1):(nbX+nbY),,drop=FALSE]
-  dmux0full = array(0,dim=c(nbX,tr$nbY,rangeTheta))
-  dmu0yfull = array(0,dim=c(nbX,tr$nbY,rangeTheta))
-
+  dmux0full = array(0,dim=c(nbX,nbY,rangeTheta))
+  dmu0yfull = array(0,dim=c(nbX,nbY,rangeTheta))
+  
   for(y in 1:nbY){
     dmux0full[,y,] = dmux0
   }
@@ -142,8 +142,8 @@ dtheta_mu.MFE_model <- function(model, theta, deltatheta=diag(length(theta)))
   dmu = c(du_Ms)*matrix(dmux0full, ncol=rangeTheta) + 
     c(dv_Ms)*matrix(dmu0yfull, ncol=rangeTheta) +
     deltaMs     
-
-    return(list(mu = c(mu), mux0s = mux0s, mu0ys = mu0ys, dmu = dmu))
+  
+  return(list(mu = c(mu), mux0s = mux0s, mu0ys = mu0ys, dmu = dmu))
   
 }
 #
