@@ -29,11 +29,11 @@ inittheta_default <- function(model)
 }
 #
 ################################################################################
-########################       affinity model            #######################
+########################       affinityMatrix model            #######################
 ################################################################################
 #
 #
-buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1, noSingles=TRUE )
+buildModel_affinityMatrix <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1, noSingles=TRUE )
 {
   nbX = dim(Xvals)[1]
   nbY = dim(Yvals)[1]
@@ -48,11 +48,11 @@ buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1, noSingl
     m = rep(1,nbY)
   }
   #
-  if ( noSingles & (sum(n) != sum(m)) ) {stop("Unequal mass of individuals in an affinity model.")}
+  if ( noSingles & (sum(n) != sum(m)) ) {stop("Unequal mass of individuals in an affinityMatrix model.")}
   #
   neededNorm = defaultNorm(noSingles)
   #
-  ret = list(type = c("affinity"),
+  ret = list(type = c("affinityMatrix"),
              dimTheta=dX*dY,
              dX=dX, dY=dY,
              nbX = nbX, nbY = nbY,
@@ -67,12 +67,12 @@ buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1, noSingl
              Phi_k = function(model, muhat)
                (c(c(muhat) %*% array(model$phi_xyk_aux,dim=c(model$nbX*model$nbY,model$dimTheta)))),
              inittheta = inittheta_default,
-            # dtheta_Psi = dtheta_Psi_affinity,
-            dtheta_params = dtheta_params_affinity,
+            # dtheta_Psi = dtheta_Psi_affinityMatrix,
+            dtheta_params = dtheta_params_affinityMatrix,
             # dtheta_G = dtheta_G_default,
             # dtheta_H = dtheta_H_default,
-             mme = mme_affinity,
-             parametricMarket = parametricMarket_affinity
+             mme = mme_affinityMatrix,
+             parametricMarket = parametricMarket_affinityMatrix
   )
 
   class(ret) = "MFE_model"
@@ -80,92 +80,17 @@ buildModel_affinity <- function(Xvals, Yvals, n=NULL, m=NULL, sigma = 1, noSingl
   return(ret)
 }
 #
-dtheta_params_affinity <- function(model, theta, deltatheta=diag(model$dimTheta))
+dtheta_params_affinityMatrix <- function(model, theta, deltatheta=diag(model$dimTheta))
   (return( exp(  matrix(rep(model$Phi_xy(model,c(theta))/2,length(theta)), ncol=length(theta))) * model$Phi_xy(model, deltatheta) /2 ))
 
 #
 #
-# mmeaffinityNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
-#   # mmeaffinityNoRegul should be improved as one should make use of the logit structure and use the ipfp
-# {
-#   #
-#   if (print_level>0){
-#     message(paste0("Moment Matching Estimation of Affinity model via IPFP+BFGS optimization."))
-#   }
-#   #
-#   theta0 = model$inittheta(model)$theta
-#   Chat = model$Phi_k(model, muhat)
-#   nbX = model$nbX
-#   nbY = model$nbY
-#   dX = model$dX
-#   dY = model$dY
-#   dimTheta = model$dimTheta
-#   sigma = model$sigma
-#   #
-#   totmass = sum(model$n) #+ sum(model$m)
-# 
-#   if ( sum(model$n) != totmass ) {stop("Unequal mass of individuals in an affinity model.")}
-#   if (sum(muhat) !=  totmass) {stop("Total number of couples does not coincide with margins.")}
-#   p = model$n / totmass
-#   q = model$m / totmass
-#   IX=rep(1,nbX)
-#   tIY=matrix(rep(1,nbY),nrow=1)
-#   f = p %*% tIY
-#   g = IX %*% t(q)
-#   pihat = muhat / totmass
-#   v=rep(0,nbY)
-#   #
-#   #
-#   valuef = function(A)
-#   {
-#     Phi = matrix(model$Phi_xy(model,c(A)) ,nbX,nbY)
-#     # Phi = Xvals %*% matrix(A,nrow=dX) %*% t(Yvals)
-#     contIpfp = TRUE
-#     iterIpfp = 0
-#     while(contIpfp)
-#     {
-#       iterIpfp = iterIpfp+1
-#       u = sigma*log(apply(g * exp( ( Phi - IX %*% t(v) ) / sigma ),1,sum))
-#       vnext = sigma*log(apply(f * exp( ( Phi - u %*% tIY ) / sigma ),2,sum))
-#       error = max(abs(apply(g * exp( ( Phi - IX %*% t(vnext) - u %*% tIY ) / sigma ),1,sum)-1))
-#       if( (error<tolIpfp) | (iterIpfp >= maxiterIpfp)) {contIpfp=FALSE}
-#       v=vnext
-#     }
-#     #print(c("Converged in ", iterIpfp, " iterations."))
-#     pi = f * g * exp( ( Phi - IX %*% t(v) - u %*% tIY ) / model$sigma )
-#     if (iterIpfp >= maxiterIpfp ) {stop('maximum number of iterations reached')}
-#     v <<- vnext
-#     #thegrad =  c(    c(pi - pihat) %*% phis)
-#     thegrad = model$Phi_k(model,pi - pihat)
-#     theval = sum(thegrad * c(A)) - sigma* sum(pi*log(pi))
-# 
-#     return(list(objective = theval,gradient = thegrad))
-#   }
-# 
-#   A0 = rep(0,dX*dY)
-#   resopt = nloptr(x0=A0,
-#                   eval_f = valuef,
-#                   opt = list(algorithm = 'NLOPT_LD_LBFGS',
-#                              xtol_rel = xtol_rel,
-#                              maxeval=maxeval,
-#                              print_level = print_level))
-#   #  AffinityMatrix = matrix(res$solution,nrow=dX)
-#   if (resopt$status<0) {warning("nloptr convergence failed.")}
-#   #
-#   thetahat = resopt$solution
-#   ret =list(thetahat=thetahat,
-#             val=resopt$objective,
-#             status = resopt$status)
-#   #
-#   return(ret)
-# }
 #
-#
-mmeaffinityNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
+mmeaffinityMatrixNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
 {
   #
   if (print_level>0){
-    message(paste0("Moment Matching Estimation of Affinity model via IPFP+BFGS optimization."))
+    message(paste0("Moment Matching Estimation of affinityMatrix model via IPFP+BFGS optimization."))
   }
   #
   theta0 = model$inittheta(model)$theta
@@ -221,7 +146,7 @@ mmeaffinityNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp
                              xtol_rel = xtol_rel,
                              maxeval=maxeval,
                              print_level = print_level))
-  #  AffinityMatrix = matrix(res$solution,nrow=dX)
+  #  affinityMatrix = matrix(res$solution,nrow=dX)
   if (resopt$status<0) {warning("nloptr convergence failed.")}
   #
   thetahat = resopt$solution[(nbX+nbY+1):(nbX+nbY+dX*dY)]
@@ -233,13 +158,13 @@ mmeaffinityNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp
 }
 #
 #
-mmeaffinityWithRegul <- function(model, muhat, lambda, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
+mmeaffinityMatrixWithRegul <- function(model, muhat, lambda, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
   # Reference: Arnaud Dupuy, Alfred Galichon, Yifei Sun (2016). "Learning Optimal Transport Costs under Low-Rank Constraints."
   # Implementation by Yifei Sun.
 {
   #
   if (print_level>0){
-    message(paste0("Moment Matching Estimation of Affinity model with regularization via proximal gradient."))
+    message(paste0("Moment Matching Estimation of affinityMatrix model with regularization via proximal gradient."))
   }
   #
   theta0 = model$inittheta(model)$theta
@@ -253,7 +178,7 @@ mmeaffinityWithRegul <- function(model, muhat, lambda, xtol_rel=1e-4, maxeval=1e
   #
   totmass = sum(model$n)
   #
-  if ( sum(model$n) != totmass ) {stop("Unequal mass of individuals in an affinity model.")}
+  if ( sum(model$n) != totmass ) {stop("Unequal mass of individuals in an affinityMatrix model.")}
   if (sum(muhat) !=  totmass) {stop("Total number of couples does not conicide with margins.")}
   p = model$n / totmass
   q = model$m / totmass
@@ -338,16 +263,167 @@ mmeaffinityWithRegul <- function(model, muhat, lambda, xtol_rel=1e-4, maxeval=1e
 }
 #
 #
-mme_affinity <- function(model, muhat, lambda = NULL, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
+mme_affinityMatrix <- function(model, muhat, lambda = NULL, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
 {
   if (is.null(lambda)) {lambda = 0}
   if ( lambda == 0 )
-  {return(mmeaffinityNoRegul(model,muhat, xtol_rel , maxeval , tolIpfp , maxiterIpfp , print_level))}
+  {return(mmeaffinityMatrixNoRegul(model,muhat, xtol_rel , maxeval , tolIpfp , maxiterIpfp , print_level))}
   else
-  { return(mmeaffinityWithRegul(model,muhat, lambda, xtol_rel , maxeval , tolIpfp , maxiterIpfp , print_level)) }
+  { return(mmeaffinityMatrixWithRegul(model,muhat, lambda, xtol_rel , maxeval , tolIpfp , maxiterIpfp , print_level)) }
 }
 #
-parametricMarket_affinity <- function(model, theta)
+parametricMarket_affinityMatrix <- function(model, theta)
+  (build_market_geoMFE(model$n,model$m,
+                       exp(  matrix(model$Phi_xy(model,c(theta)), nrow=model$nbX)/2),
+                       neededNorm=model$neededNorm))
+
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+########################       affinityVector model            #######################
+################################################################################
+#
+#
+buildModel_affinityVector <- function(phi_xyk, n=NULL, m=NULL, sigma = 1, noSingles=TRUE )
+{
+  nbX = dim(phi_xyk)[1]
+  nbY = dim(phi_xyk)[2]
+  nbk = dim(phi_xyk)[3]
+  #
+  if(is.null(n)){
+    n = rep(1,nbX)
+  }
+  if(is.null(m)){
+    m = rep(1,nbY)
+  }
+  #
+  if ( noSingles & (sum(n) != sum(m)) ) {stop("Unequal mass of individuals in an affinityVector model.")}
+  #
+  neededNorm = defaultNorm(noSingles)
+  #
+  ret = list(type = c("affinityVector"),
+             dimTheta=nbk,
+             nbX = nbX, nbY = nbY,
+             n=n, m=m,
+             sigma = sigma,
+             neededNorm = neededNorm,
+             phi_xyk_aux = phi_xyk,
+             Phi_xyk = function(model)
+               (model$phi_xyk_aux),
+             Phi_xy = function(model ,lambda)
+               ( array(model$phi_xyk_aux,dim=c(model$nbX*model$nbY,model$dimTheta)) %*% lambda ),
+             Phi_k = function(model, muhat)
+               (c(c(muhat) %*% array(model$phi_xyk_aux,dim=c(model$nbX*model$nbY,model$dimTheta)))),
+             inittheta = inittheta_default,
+             # dtheta_Psi = dtheta_Psi_affinityVector,
+             dtheta_params = dtheta_params_affinityVector,
+             # dtheta_G = dtheta_G_default,
+             # dtheta_H = dtheta_H_default,
+             mme = mme_affinityVector,
+             parametricMarket = parametricMarket_affinityVector
+  )
+  
+  class(ret) = "MFE_model"
+  #
+  return(ret)
+}
+#
+dtheta_params_affinityVector <- function(model, theta, deltatheta=diag(model$dimTheta))
+  (return( exp(  matrix(rep(model$Phi_xy(model,c(theta))/2,length(theta)), ncol=length(theta))) * model$Phi_xy(model, deltatheta) /2 ))
+
+#
+#
+#
+mmeaffinityVectorNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
+{
+  #
+  if (print_level>0){
+    message(paste0("Moment Matching Estimation of affinityVector model via IPFP+BFGS optimization."))
+  }
+  #
+  theta0 = model$inittheta(model)$theta
+  nbX = model$nbX
+  nbY = model$nbY
+  nbk = model$dimTheta
+  sigma = model$sigma
+  #
+  totmass = sum(model$n) + sum(model$m)
+  
+  p = model$n / totmass
+  q = model$m / totmass
+  IX=rep(1,nbX)
+  tIY=matrix(rep(1,nbY),nrow=1)
+  f = p %*% tIY
+  g = IX %*% t(q)
+  pihat = muhat / totmass
+  v=rep(0,nbY)
+  withSingles = ifelse(is.null(model$neededNorm),1,0)
+  pihatPhi_k = model$Phi_k(model, pihat)
+  
+  #
+  #
+  valuef = function(args)
+  {
+    u = args[1:nbX]
+    v = args[(nbX+1):(nbX+nbY)]
+    theta = c(args[(nbX+nbY+1):(nbX+nbY+nbk)])
+    
+    Phi = matrix(model$Phi_xy(model,theta) ,nbX,nbY)
+    
+    piTheta_xy = exp( (Phi - u - matrix(v,nbX,nbY,byrow=T) )/ (2*sigma) )
+    sum_piTheta_xy = sum( piTheta_xy )
+    sum_piTheta_x0 = sum( exp( -u / sigma ) ) 
+    sum_piTheta_0y = sum( exp( -v / sigma ) )
+    
+    theval = sum( p * u) + sum(q * v) + 2*sigma*sum_piTheta_xy + sigma*withSingles*sum_piTheta_x0 + sigma*withSingles*sum_piTheta_0y - sum(pihatPhi_k * theta
+                                                                                                                                           
+                                                                                                                                           grad_u_x = p - apply(piTheta_xy, MARGIN = 1, FUN = sum) - withSingles * exp( -u / sigma ) 
+                                                                                                                                           grad_v_y = q - apply(piTheta_xy, MARGIN = 2, FUN = sum) - withSingles * exp( -v / sigma ) 
+                                                                                                                                           grad_A = model$Phi_k(model, piTheta_xy) - pihatPhi_k
+                                                                                                                                           
+                                                                                                                                           thegrad = c(grad_u_x,grad_v_y,grad_A)
+                                                                                                                                           return(list(objective = theval,gradient = thegrad))
+  }
+  
+  x0 = c(rep(0,nbX+nbY),theta0)
+  resopt = nloptr(x0 = x0,
+                  eval_f = valuef,
+                  opt = list(algorithm = 'NLOPT_LD_LBFGS',
+                             xtol_rel = xtol_rel,
+                             maxeval=maxeval,
+                             print_level = print_level))
+  if (resopt$status<0) {warning("nloptr convergence failed.")}
+  #
+  thetahat = resopt$solution[(nbX+nbY+1):(nbX+nbY+nbk)]
+  ret =list(thetahat=thetahat,
+            val=resopt$objective,
+            status = resopt$status)
+  #
+  return(ret)
+}
+#
+#
+mmeaffinityVectorWithRegul <- function(model, muhat, lambda, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
+{
+  stop("To be implemented")
+  # TO ADD, A SPECIFICATION WITH LASSO
+}
+#
+#
+mme_affinityVector <- function(model, muhat, lambda = NULL, xtol_rel=1e-4, maxeval=1e5, tolIpfp=1E-14, maxiterIpfp = 1e5, print_level=0)
+{
+  if (is.null(lambda)) {lambda = 0}
+  if ( lambda == 0 )
+  {return(mmeaffinityVectorNoRegul(model,muhat, xtol_rel , maxeval , tolIpfp , maxiterIpfp , print_level))}
+  else
+  { return(mmeaffinityVectorWithRegul(model,muhat, lambda, xtol_rel , maxeval , tolIpfp , maxiterIpfp , print_level)) }
+}
+#
+parametricMarket_affinityVector <- function(model, theta)
   (build_market_geoMFE(model$n,model$m,
                        exp(  matrix(model$Phi_xy(model,c(theta)), nrow=model$nbX)/2),
                        neededNorm=model$neededNorm))
