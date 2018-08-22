@@ -379,7 +379,7 @@ mmeaffinityVectorNoRegul <- function(model, muhat, xtol_rel=1e-4, maxeval=1e5, t
     sum_piTheta_x0 = sum( exp( -u / sigma ) ) 
     sum_piTheta_0y = sum( exp( -v / sigma ) )
     
-    theval = sum( p * u) + sum(q * v) + 2*sigma*sum_piTheta_xy + sigma*withSingles*sum_piTheta_x0 + sigma*withSingles*sum_piTheta_0y - sum(pihatPhi_k * theta
+    theval = sum( p * u) + sum(q * v) + 2*sigma*sum_piTheta_xy + sigma*withSingles*sum_piTheta_x0 + sigma*withSingles*sum_piTheta_0y - sum(pihatPhi_k * theta)
                                                                                                                                            
                                                                                                                                            grad_u_x = p - apply(piTheta_xy, MARGIN = 1, FUN = sum) - withSingles * exp( -u / sigma ) 
                                                                                                                                            grad_v_y = q - apply(piTheta_xy, MARGIN = 2, FUN = sum) - withSingles * exp( -v / sigma ) 
